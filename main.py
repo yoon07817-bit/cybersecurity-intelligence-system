@@ -4,45 +4,39 @@ from filter import (
     remove_duplicates
 )
 
+from database import create_table, save_article, article_exists
 
 def main():
 
-    # Step 1: Fetch articles from RSS feeds
+    # INIT DATABASE
+    create_table()
+
+    # STEP 1: FETCH ARTICLES
     articles = fetch_articles()
 
-    # Duplicate list for testing duplicate removal
-    # (This intentionally creates duplicate articles)
+    # For testing duplicates
     articles = articles + articles
 
-    # Count total fetched articles
     total_fetched = len(articles)
 
     print("\nPIPELINE PROCESSING")
     print("-" * 40)
     print("Total fetched articles:", total_fetched)
 
-    # Step 2: Filter articles published in last 24 hours
+    # STEP 2: FILTER (24 HOURS)
     recent_articles = filter_recent_articles(articles)
 
-    print("Articles after 24-hour filtering:",
-          len(recent_articles))
+    print("Articles after 24-hour filtering:", len(recent_articles))
 
-    # Step 3: Remove duplicate articles
+    # STEP 3: REMOVE DUPLICATES
     unique_articles = remove_duplicates(recent_articles)
 
-    print("Articles after duplicate removal:",
-          len(unique_articles))
+    print("Articles after duplicate removal:", len(unique_articles))
 
-    # Calculate duplicates removed
-    duplicates_removed = (
-        len(recent_articles)
-        - len(unique_articles)
-    )
-
-    # Final count of unique articles
+    duplicates_removed = len(recent_articles) - len(unique_articles)
     new_articles = len(unique_articles)
 
-    # Step 4: Print summary
+    # SUMMARY
     print("\nSUMMARY")
     print("-" * 40)
 
@@ -52,17 +46,35 @@ def main():
         f"{new_articles} new articles"
     )
 
-    # Step 5: Show first 10 final articles
+    # STEP 4: FINAL PROCESSING + DATABASE SAVE
     print("\nFINAL ARTICLES")
     print("-" * 40)
 
     for article in unique_articles[:10]:
 
-        print("\nTitle:", article["title"])
+        # CHECK DATABASE FOR DUPLICATES
+        if article_exists(article["url"]):
+            print("Skipping duplicate:", article["title"])
+            continue
+
+        # SAFE DEFAULT FIELDS
+        if "summary" not in article:
+            article["summary"] = "No summary available"
+
+        if "severity" not in article:
+            article["severity"] = "Unknown"
+
+        # SAVE TO DATABASE
+        save_article(article)
+
+        # OUTPUT
+        print("\nSAVED ARTICLE")
+        print("Title:", article["title"])
         print("Source:", article["source"])
         print("Date:", article["published_date"])
         print("URL:", article["url"])
 
 
+# START PROGRAM
 if __name__ == "__main__":
     main()
