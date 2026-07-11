@@ -3,3 +3,5 @@ requests
 flask
 schedule
 openai
+transformers
+torch
