@@ -105,9 +105,8 @@ def main():
 
 
 
-    # PROCESS ONLY FIRST 5 ARTICLES
-    selected_articles = unique_articles[:5]
-
+# PROCESS FIRST 10 ARTICLES
+    selected_articles = unique_articles[:10]
 
     total_articles = len(selected_articles)
 
@@ -179,7 +178,9 @@ def main():
 
 
                 article["summary"] = summarize(
+                    article["title"],
                     article_text
+
                 )
 
 

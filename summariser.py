@@ -1,28 +1,29 @@
 import os
+import time
 import requests
-
 
 API_KEY = os.getenv("GROQ_API_KEY")
 
-
 if not API_KEY:
     raise ValueError(
-        "GROQ_API_KEY is not set."
+        "GROQ_API_KEY is not set. Please set it as an environment variable."
     )
 
 
-def summarize(text):
+def summarize(title, text):
+    """
+    Generate a cybersecurity summary using Groq AI.
+    """
 
     prompt = f"""
-Summarize the following cybersecurity article using Markdown formatting.
+You are a cybersecurity analyst.
+
+Summarize the following cybersecurity article using Markdown.
 
 Requirements:
-- Use clear section headings (##).
-- Bold important information using **bold**.
-- Use bullet points for key information.
+- Focus on what happened, who is affected, and why it matters.
 - Keep the summary concise.
-
-Format:
+- Use the following format exactly.
 
 ## **Main Point**
 (One sentence)
@@ -33,22 +34,21 @@ Format:
 - Point 3
 
 ## **Summary**
-(2-3 sentences)
+(2-3 short sentences)
+
+Title:
+{title}
 
 Article:
-
 {text}
 """
 
-
     url = "https://api.groq.com/openai/v1/chat/completions"
-
 
     headers = {
         "Authorization": f"Bearer {API_KEY}",
         "Content-Type": "application/json"
     }
-
 
     data = {
         "model": "llama-3.3-70b-versatile",
@@ -61,19 +61,26 @@ Article:
         "temperature": 0.3
     }
 
+    try:
 
-    response = requests.post(
-        url,
-        headers=headers,
-        json=data,
-        timeout=60
-    )
+        response = requests.post(
+            url,
+            headers=headers,
+            json=data,
+            timeout=60
+        )
 
+        response.raise_for_status()
 
-    response.raise_for_status()
+        result = response.json()
 
+        # Rate limiting
+        time.sleep(1)
 
-    result = response.json()
+        return result["choices"][0]["message"]["content"].strip()
 
+    except Exception as e:
 
-    return result["choices"][0]["message"]["content"]
+        print(f"[ERROR] Failed to summarize article: {e}")
+
+        return "Summary unavailable due to API error."
