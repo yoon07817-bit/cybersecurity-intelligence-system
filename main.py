@@ -148,9 +148,8 @@ def main():
 
 
 
-    # Testing duplicate removal
-
-    articles = articles + articles
+  # Testing duplicate removal disabled
+# articles = articles + articles
 
 
     total_fetched = len(articles)
@@ -224,7 +223,20 @@ def main():
 
 
 
-    selected_articles = unique_articles[:10]
+    selected_articles = []
+
+    source_count = {}
+
+    for article in unique_articles:
+
+        source = article["source"]
+
+        if source_count.get(source, 0) < 2:
+            selected_articles.append(article)
+            source_count[source] = source_count.get(source, 0) + 1
+
+        if len(selected_articles) == 10:
+            break
 
 
     total_articles = len(selected_articles)
@@ -321,9 +333,9 @@ def main():
                             # STEP 6: SCORE ARTICLE
 
             result = score_article(
-                article["title"],
-                article["summary"]
-            )
+                    article["title"],
+                    article["summary"]
+                )
 
 
             article["severity"] = result["severity"]

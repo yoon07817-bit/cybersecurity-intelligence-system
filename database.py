@@ -1,6 +1,6 @@
 import sqlite3
 from datetime import datetime, date
-
+from zoneinfo import ZoneInfo
 
 DB_NAME = "save_data.db"
 
@@ -105,7 +105,11 @@ def save_article(article):
 
             article.get("score"),
 
-            datetime.now().isoformat()
+            datetime.now(
+                ZoneInfo("Asia/Yangon")
+            ).strftime(
+                "%Y-%m-%d %H:%M:%S MMT"
+            )
 
         ))
 
@@ -161,7 +165,9 @@ def get_articles_today():
     cursor = conn.cursor()
 
 
-    today = date.today().isoformat()
+    today = datetime.now(
+        ZoneInfo("Asia/Yangon")
+    ).strftime("%Y-%m-%d")
 
 
     cursor.execute("""

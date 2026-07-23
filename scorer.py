@@ -1,6 +1,7 @@
 """
 scorer.py
 
+
 Rule-Based Severity Scoring System
 
 Stage 1:
@@ -19,35 +20,251 @@ High keyword = 3 points
 Medium keyword = 1 point
 """
 
+
 # ==========================================================
-# Keyword Lists
+# Critical Keywords (Canonical -> Synonyms)
 # ==========================================================
 
 CRITICAL_KEYWORDS = {
-    "zero-day",
-    "actively exploited",
-    "ransomware",
-    "nation-state",
-    "critical infrastructure",
-}
+    "zero-day": [
+        "zero-day",
+        "zero day",
+        "0day",
+    ],
 
-HIGH_KEYWORDS = {
-    "cve",
-    "remote code execution",
-    "data breach",
-    "vulnerability",
-    "patch",
-}
+    "actively exploited": [
+        "actively exploited",
+        "being exploited",
+        "currently exploited",
+        "confirmed exploitation",
+        "under active attack",
+        "ongoing attacks",
+        "used in attacks",
+        "attacks observed",
+        "seen in the wild",
+        "exploited in the wild",
+        "mass exploitation",
+    ],
 
-MEDIUM_KEYWORDS = {
-    "phishing",
-    "malware",
-    "advisory",
-    "warning",
-    "update",
+    "ransomware": [
+        "ransomware",
+        "file-encrypting malware",
+        "encrypting malware",
+    ],
+
+    "nation-state": [
+        "nation-state",
+        "state-sponsored",
+        "government-backed",
+        "apt",
+        "advanced persistent threat",
+    ],
+
+    "critical infrastructure": [
+        "critical infrastructure",
+        "power grid",
+        "water treatment",
+        "energy sector",
+        "healthcare system",
+        "hospital network",
+    ],
+
+    "wormable": [
+        "wormable",
+        "self-propagating",
+    ],
+
+    "supply chain attack": [
+        "supply chain attack",
+        "software supply chain",
+        "third-party compromise",
+    ],
+
+    "backdoor": [
+        "backdoor",
+        "hidden backdoor",
+        "malicious backdoor",
+    ],
+
+    "privilege escalation": [
+        "privilege escalation",
+        "elevation of privilege",
+    ],
+
+    "sandbox escape": [
+        "sandbox escape",
+        "container escape",
+    ],
+
+    "remote takeover": [
+        "remote takeover",
+        "complete system compromise",
+        "full system compromise",
+    ],
 }
 
 # ==========================================================
+# High Keywords
+# ==========================================================
+
+HIGH_KEYWORDS = {
+    "cve": [
+        "cve",
+    ],
+
+    "remote code execution": [
+        "remote code execution",
+        "rce",
+        "execute arbitrary code",
+        "arbitrary code execution",
+    ],
+
+    "authentication bypass": [
+        "authentication bypass",
+        "login bypass",
+        "bypass authentication",
+    ],
+
+    "command injection": [
+        "command injection",
+        "os command injection",
+    ],
+
+    "sql injection": [
+        "sql injection",
+        "sqli",
+    ],
+
+    "data breach": [
+        "data breach",
+        "data leak",
+        "information leak",
+        "database leak",
+        "customer data exposed",
+        "sensitive data exposed",
+    ],
+
+    "credential theft": [
+        "credential theft",
+        "stolen credentials",
+        "credential compromise",
+        "password theft",
+    ],
+
+    "vulnerability": [
+        "vulnerability",
+        "security flaw",
+        "security issue",
+        "software flaw",
+        "bug",
+    ],
+
+    "exploit": [
+        "exploit",
+        "exploitation",
+        "exploit code",
+    ],
+
+    "patch": [
+        "patch",
+        "patched",
+        "patches",
+        "security update",
+        "hotfix",
+    ],
+
+    "proof of concept": [
+        "proof of concept",
+        "poc",
+    ],
+
+    "denial of service": [
+        "denial of service",
+        "dos",
+        "ddos",
+        "distributed denial of service",
+    ],
+
+    "memory corruption": [
+        "memory corruption",
+        "buffer overflow",
+        "heap overflow",
+        "stack overflow",
+        "use-after-free",
+    ],
+}
+
+# ==========================================================
+# Medium Keywords
+# ==========================================================
+
+MEDIUM_KEYWORDS = {
+    "phishing": [
+        "phishing",
+        "email scam",
+        "credential harvesting",
+        "fake login",
+        "fake login page",
+        "phishing campaign",
+    ],
+
+    "malware": [
+        "malware",
+        "malicious software",
+        "malicious program",
+    ],
+
+    "trojan": [
+        "trojan",
+        "trojan horse",
+    ],
+
+    "spyware": [
+        "spyware",
+        "surveillance malware",
+    ],
+
+    "adware": [
+        "adware",
+    ],
+
+    "warning": [
+        "warning",
+        "alert",
+        "caution",
+    ],
+
+    "advisory": [
+        "advisory",
+        "security advisory",
+        "bulletin",
+        "security bulletin",
+    ],
+
+    "update": [
+        "update",
+        "updated",
+        "software update",
+    ],
+
+    "social engineering": [
+        "social engineering",
+        "human manipulation",
+    ],
+
+    "risk": [
+        "risk",
+        "security risk",
+    ],
+
+    "campaign": [
+        "campaign",
+        "malicious campaign",
+        "attack campaign",
+    ],
+}
+
+ # ==========================================================
 # Point Values
 # ==========================================================
 
@@ -58,37 +275,76 @@ KEYWORD_POINTS = {
 }
 
 # ==========================================================
+# Severity Promotion Thresholds
+# ==========================================================
+
+#
+# Severity Rules:
+#
+# Critical:
+# - Any Critical keyword found
+# - OR total score >= 20
+#
+# High:
+# - Any High keyword found
+# - OR total score >= 10
+#
+# Medium:
+# - Any Medium keyword found
+# - OR score below High threshold
+#
+# Low:
+# - No keywords detected
+#
+# Score Calculation:
+# Critical keyword = 5 points
+# High keyword     = 3 points
+# Medium keyword   = 1 point
+#
+# Examples:
+#
+# 4 High keywords:
+# 4 x 3 = 12 points -> High
+#
+# 7 High keywords:
+# 7 x 3 = 21 points -> Critical
+#
+# 20 Medium keywords:
+# 20 x 1 = 20 points -> Critical
+#
+# ==========================================================
+
+PROMOTION_THRESHOLDS = {
+    "critical": 20, # Score >= 20 becomes Critical
+    "high": 10,# Score >= 10 becomes High
+}
+
+
+# ==========================================================
 # Helper Function
 # ==========================================================
 
-def find_keywords(text, keyword_set):
+import re
+
+def find_keywords(text, keyword_dict):
     """
-    Find matching keywords in a text.
-
-    Parameters
-    ----------
-    text : str
-        Article title and summary.
-
-    keyword_set : set
-        Set of keywords to search.
-
-    Returns
-    -------
-    set
-        Matched keywords (duplicates removed).
+    Find matching canonical keywords using synonym lists.
     """
 
     text = text.lower()
-
     found = set()
 
-    for keyword in keyword_set:
-        if keyword.lower() in text:
-            found.add(keyword)
+    for canonical_keyword, synonyms in keyword_dict.items():
+
+        for synonym in synonyms:
+
+            pattern = r"\b" + re.escape(synonym.lower()) + r"\b"
+
+            if re.search(pattern, text):
+                found.add(canonical_keyword)
+                break
 
     return found
-
 
 # ==========================================================
 # Main Scoring Function
@@ -107,14 +363,27 @@ def score_article(title, summary):
     high_matches = find_keywords(text, HIGH_KEYWORDS)
     medium_matches = find_keywords(text, MEDIUM_KEYWORDS)
 
-    # ------------------------------------------------------
-    # Stage 1 - Determine Severity
-    # ------------------------------------------------------
 
+    score = (
+        len(critical_matches) * KEYWORD_POINTS["critical"]
+        + len(high_matches) * KEYWORD_POINTS["high"]
+        + len(medium_matches) * KEYWORD_POINTS["medium"]
+    )
+
+
+    # ------------------------------------------------------
+    # Determine Severity
+    # ------------------------------------------------------
     if critical_matches:
         severity = "Critical"
 
+    elif score >= PROMOTION_THRESHOLDS["critical"]:
+        severity = "Critical"
+
     elif high_matches:
+        severity = "High"
+
+    elif score >= PROMOTION_THRESHOLDS["high"]:
         severity = "High"
 
     elif medium_matches:
@@ -123,15 +392,6 @@ def score_article(title, summary):
     else:
         severity = "Low"
 
-    # ------------------------------------------------------
-    # Stage 2 - Calculate Score
-    # ------------------------------------------------------
-
-    score = (
-        len(critical_matches) * KEYWORD_POINTS["critical"]
-        + len(high_matches) * KEYWORD_POINTS["high"]
-        + len(medium_matches) * KEYWORD_POINTS["medium"]
-    )
 
     # ------------------------------------------------------
     # Return Result
@@ -144,6 +404,7 @@ def score_article(title, summary):
         "high_keywords": sorted(high_matches),
         "medium_keywords": sorted(medium_matches),
     }
+
 
 
 # ==========================================================
