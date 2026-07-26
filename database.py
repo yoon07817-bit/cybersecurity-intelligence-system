@@ -1,6 +1,8 @@
 import sqlite3
-from datetime import datetime, date
+
+from datetime import datetime
 from zoneinfo import ZoneInfo
+
 
 DB_NAME = "save_data.db"
 
@@ -13,10 +15,13 @@ def create_connection():
 
 
 
+
+
 # TABLE SETUP
 def create_table():
 
     conn = create_connection()
+
     cursor = conn.cursor()
 
 
@@ -41,6 +46,8 @@ def create_table():
 
             score INTEGER,
 
+            alert_sent INTEGER DEFAULT 0,
+
             created_at TEXT
 
         )
@@ -53,16 +60,20 @@ def create_table():
 
 
 
+
+
 # SAVE ARTICLE
 def save_article(article):
 
     conn = create_connection()
+
     cursor = conn.cursor()
 
 
     try:
 
         cursor.execute("""
+
             INSERT INTO articles (
 
                 title,
@@ -81,13 +92,17 @@ def save_article(article):
 
                 score,
 
+                alert_sent,
+
                 created_at
 
             )
 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 
-        """, (
+        """,
+
+        (
 
             article["title"],
 
@@ -104,6 +119,8 @@ def save_article(article):
             article.get("severity"),
 
             article.get("score"),
+
+            0,
 
             datetime.now(
                 ZoneInfo("Asia/Yangon")
@@ -133,6 +150,8 @@ def save_article(article):
 
 
 
+
+
 # CHECK IF ARTICLE EXISTS
 def article_exists(url):
 
@@ -142,8 +161,11 @@ def article_exists(url):
 
 
     cursor.execute(
+
         "SELECT 1 FROM articles WHERE url = ?",
+
         (url,)
+
     )
 
 
@@ -154,6 +176,8 @@ def article_exists(url):
 
 
     return result is not None
+
+
 
 
 
@@ -171,12 +195,18 @@ def get_articles_today():
 
 
     cursor.execute("""
+
         SELECT *
+
         FROM articles
+
         WHERE created_at LIKE ?
+
         ORDER BY created_at DESC
 
-    """, (today + "%",))
+    """,
+
+    (today + "%",))
 
 
     rows = cursor.fetchall()
@@ -189,9 +219,115 @@ def get_articles_today():
 
 
 
+
+
+# GET NEW CRITICAL ARTICLES
+# Used by Week 13 Alert System
+def get_critical_articles():
+
+    conn = create_connection()
+
+    cursor = conn.cursor()
+
+
+    cursor.execute("""
+
+        SELECT
+
+            id,
+
+            title,
+
+            url,
+
+            summary,
+
+            severity,
+
+            score
+
+        FROM articles
+
+        WHERE severity = 'Critical'
+
+        AND alert_sent = 0
+
+        ORDER BY created_at DESC
+
+    """)
+
+
+    rows = cursor.fetchall()
+
+
+    conn.close()
+
+
+
+    articles = []
+
+
+    for row in rows:
+
+
+        articles.append({
+
+            "id": row[0],
+
+            "title": row[1],
+
+            "link": row[2],
+
+            "summary": row[3],
+
+            "severity": row[4],
+
+            "score": row[5]
+
+        })
+
+
+    return articles
+
+
+
+
+
+# MARK ALERT AS SENT
+# Prevents duplicate alert emails
+def mark_alert_sent(article_id):
+
+    conn = create_connection()
+
+    cursor = conn.cursor()
+
+
+    cursor.execute("""
+
+        UPDATE articles
+
+        SET alert_sent = 1
+
+        WHERE id = ?
+
+    """,
+
+    (article_id,))
+
+
+    conn.commit()
+
+    conn.close()
+
+
+
+
+
 # TEST RUN
 if __name__ == "__main__":
 
     create_table()
 
-    print("Database ready.")
+    print(
+        "Database ready."
+    )

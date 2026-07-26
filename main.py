@@ -222,6 +222,14 @@ def main():
     print("-" * 50)
 
 
+    print("\nUnique articles by source:")
+    counts = {}
+
+    for article in unique_articles:
+        counts[article["source"]] = counts.get(article["source"], 0) + 1
+
+    for source, count in counts.items():
+        print(f"{source}: {count}")
 
     selected_articles = []
 
@@ -235,8 +243,7 @@ def main():
             selected_articles.append(article)
             source_count[source] = source_count.get(source, 0) + 1
 
-        if len(selected_articles) == 10:
-            break
+        selected_articles = unique_articles[:10]
 
 
     total_articles = len(selected_articles)
