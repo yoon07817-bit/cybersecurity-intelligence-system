@@ -243,7 +243,7 @@ def main():
             selected_articles.append(article)
             source_count[source] = source_count.get(source, 0) + 1
 
-        selected_articles = unique_articles[:10]
+    selected_articles = unique_articles[:10]
 
 
     total_articles = len(selected_articles)
@@ -325,19 +325,19 @@ def main():
 
             else:
 
-
                 article["content"] = ""
 
-
-                article["summary"] = (
-                    "Unable to extract article."
-                )
-
-
                 print(
-                    "Failed to extract article."
+                    "No article body found. Summarising title only."
                 )
-                            # STEP 6: SCORE ARTICLE
+
+
+                article["summary"] = summarize(
+                    article["title"],
+                    article["title"]
+                )
+
+            # STEP 6: SCORE ARTICLE
 
             result = score_article(
                     article["title"],

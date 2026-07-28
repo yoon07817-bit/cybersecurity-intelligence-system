@@ -2,6 +2,10 @@ from emailer import send_email
 
 
 
+# ==========================
+# TEST ARTICLES
+# ==========================
+
 test_articles = [
 
     {
@@ -33,7 +37,61 @@ test_articles = [
 
 
 
-send_email(
+# ==========================
+# TEST EMAIL RECEIVERS
+# ==========================
+
+test_emails = [
+
     "nandaroo9070@gmail.com",
-    test_articles
-)
+
+    "yoon07817@gmail.com"
+
+]
+
+
+
+# ==========================
+# SEND TEST EMAILS
+# ==========================
+
+for email in test_emails:
+
+    print("\n")
+    print("=" * 50)
+
+    print(
+        "Sending test email to:",
+        email
+    )
+
+    print("=" * 50)
+
+
+    try:
+
+        send_email(
+            email,
+            test_articles
+        )
+
+
+        print(
+            "Test completed for:",
+            email
+        )
+
+
+    except Exception as e:
+
+        print(
+            "Failed sending to:",
+            email
+        )
+
+        print(e)
+
+
+
+print("\n")
+print("All email tests completed.")

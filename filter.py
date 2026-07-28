@@ -12,13 +12,11 @@ def filter_recent_articles(articles):
 
     filtered_articles = []
 
-
     # Current Myanmar time - 24 hours
     cutoff = datetime.now(MYANMAR_TZ) - timedelta(hours=24)
 
 
     for article in articles:
-
 
         # Skip articles without date
         if not article.get("published_date"):
@@ -65,42 +63,61 @@ def filter_recent_articles(articles):
 
 
 
+
+
 def remove_duplicates(articles):
     """
     Remove duplicate articles based on:
     1. Same URL
-    2. Same title
+    2. Same title (case-insensitive)
     """
 
-
     unique_articles = []
-
 
     seen_urls = set()
 
     seen_titles = set()
 
 
-
     for article in articles:
 
+        # Get URL
 
-        url = article.get("url", "")
+        url = article.get(
+            "url",
+            ""
+        ).strip()
 
-        title = article.get("title", "")
+
+        # Get title and normalize
+
+        title = article.get(
+            "title",
+            ""
+        ).lower().strip()
 
 
 
-        # Duplicate URL
+        # Skip duplicate URL
 
         if url in seen_urls:
+            print(
+                "Duplicate URL removed:",
+                url
+            )
+
             continue
 
 
 
-        # Duplicate title
+        # Skip duplicate title
 
         if title in seen_titles:
+            print(
+                "Duplicate title removed:",
+                title
+            )
+
             continue
 
 
@@ -110,8 +127,7 @@ def remove_duplicates(articles):
         unique_articles.append(article)
 
 
-
-        # Remember
+        # Remember article
 
         seen_urls.add(url)
 
