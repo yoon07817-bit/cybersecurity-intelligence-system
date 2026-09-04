@@ -3,17 +3,38 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-from config import EMAIL_ADDRESS, EMAIL_PASSWORD
+
+from config import (
+    EMAIL_ADDRESS,
+    EMAIL_PASSWORD
+)
+
+
+from database import (
+    get_critical_articles,
+    get_users_for_alert,
+    mark_alert_sent
+)
+
+
+from severity_filter import allow_alert
 
 
 
-# CHECK IF ARTICLE SHOULD ALERT
+
+
+# ==========================================
+# CHECK WHETHER ARTICLE NEEDS ALERT
+# ==========================================
+
 def should_alert(article):
 
     critical_keywords = [
 
         "zero-day",
+
         "actively exploited",
+
         "poc released"
 
     ]
@@ -21,11 +42,11 @@ def should_alert(article):
 
     text = (
 
-        article["title"]
+        article.get("title", "")
 
-        + " "
+        +
 
-        + article["summary"]
+        article.get("summary", "")
 
     ).lower()
 
@@ -39,7 +60,7 @@ def should_alert(article):
 
 
 
-    if article["severity"] == "Critical":
+    if article.get("severity") == "Critical":
 
         return True
 
@@ -51,103 +72,37 @@ def should_alert(article):
 
 
 
-# SEND CRITICAL ALERT EMAIL
-def send_alert_email(article, recipient):
+
+# ==========================================
+# SEND EMAIL ALERT
+# ==========================================
+
+def send_alert_email(article):
 
 
-    msg = MIMEMultipart("alternative")
-
-
-    msg["Subject"] = (
-        "🚨 Critical Security Alert"
+    users = get_users_for_alert(
+        "critical"
     )
 
 
-    msg["From"] = EMAIL_ADDRESS
+    if not users:
 
-    msg["To"] = recipient
-
-
-
-    html = f"""
-
-    <html>
-
-    <body>
-
-
-    <h2>
-    🚨 Critical Security Alert
-    </h2>
-
-
-    <h3>
-    {article["title"]}
-    </h3>
-
-
-
-    <p>
-
-    <b>
-    Severity:
-    </b>
-
-    🔴 {article["severity"]}
-
-    </p>
-
-
-
-    <p>
-
-    <b>
-    Score:
-    </b>
-
-    {article["score"]}
-
-    </p>
-
-
-
-    <p>
-
-    {article["summary"]}
-
-    </p>
-
-
-
-    <p>
-
-    <a href="{article["link"]}">
-    Read Full Article
-    </a>
-
-    </p>
-
-
-
-    </body>
-
-    </html>
-
-    """
-
-
-
-    msg.attach(
-        MIMEText(
-            html,
-            "html"
+        print(
+            "No critical subscribers."
         )
-    )
+
+        return False
+
+
+
+    successful_send = False
 
 
 
     try:
 
+
+        # Open SMTP connection once
 
         with smtplib.SMTP(
             "smtp.gmail.com",
@@ -164,13 +119,120 @@ def send_alert_email(article, recipient):
             )
 
 
-            smtp.send_message(msg)
+
+            for user in users:
 
 
 
-        print(
-            "🚨 Alert sent!"
-        )
+                # Check user's severity preference
+
+                if not allow_alert(
+
+                    article.get(
+                        "severity",
+                        "Low"
+                    ),
+
+                    user["minimum_severity"]
+
+                ):
+
+                    continue
+
+
+
+
+
+                html = f"""
+
+                <html>
+
+                <body style="font-family: Arial;">
+
+
+                <h2>
+                🚨 Critical Security Alert
+                </h2>
+
+
+                <h3>
+                {article.get('title', 'Security Threat')}
+                </h3>
+
+
+                <p>
+                <b>Severity:</b>
+                {article.get('severity', 'Unknown')}
+                </p>
+
+
+                <p>
+                <b>Threat Score:</b>
+                {article.get('score', 'N/A')}
+                </p>
+
+
+                <p>
+                {article.get('summary', 'No summary available')}
+                </p>
+
+
+                </body>
+
+                </html>
+
+                """
+
+
+
+
+
+                msg = MIMEMultipart(
+                    "alternative"
+                )
+
+
+                msg["Subject"] = (
+
+                    "🚨 Critical Security Alert"
+
+                )
+
+
+                msg["From"] = EMAIL_ADDRESS
+
+
+                msg["To"] = user["email"]
+
+
+
+                msg.attach(
+
+                    MIMEText(
+                        html,
+                        "html"
+                    )
+
+                )
+
+
+
+                smtp.send_message(msg)
+
+
+
+                print(
+
+                    "Critical alert sent:",
+
+                    user["email"]
+
+                )
+
+
+
+                successful_send = True
+
 
 
 
@@ -178,115 +240,133 @@ def send_alert_email(article, recipient):
 
 
         print(
-            "Alert email failed:"
+
+            "Alert failed:",
+
+            e
+
         )
 
 
-        print(e)
+        return False
 
 
 
 
 
-# SEND NO NEWS EMAIL
-def send_no_news_email(recipient):
-
-
-    msg = MIMEMultipart("alternative")
-
-
-    msg["Subject"] = (
-        "Daily Security Alert"
-    )
-
-
-    msg["From"] = EMAIL_ADDRESS
-
-
-    msg["To"] = recipient
+    return successful_send
 
 
 
 
-    html = """
-
-    <html>
-
-    <body>
-
-
-    <h2>
-    Daily Security Alert
-    </h2>
 
 
 
-    <p>
-    No new alerts today.
-    </p>
+# ==========================================
+# PROCESS UNSENT CRITICAL ALERTS
+# ==========================================
+
+def process_unhandled_critical_alerts():
 
 
 
-    <p>
-
-    No Critical cybersecurity threats
-    were detected.
-
-    </p>
+    articles = get_critical_articles()
 
 
 
-    </body>
-
-    </html>
-
-    """
+    if not articles:
 
 
-
-    msg.attach(
-        MIMEText(
-            html,
-            "html"
+        print(
+            "No un-sent critical alerts."
         )
-    )
+
+
+        return
 
 
 
-    try:
 
 
-        with smtplib.SMTP(
-            "smtp.gmail.com",
-            587
-        ) as smtp:
+    for article in articles:
 
 
-            smtp.starttls()
+
+        # Convert sqlite Row to dictionary
+
+        article = dict(article)
 
 
-            smtp.login(
-                EMAIL_ADDRESS,
-                EMAIL_PASSWORD
+
+        print(
+
+            "Checking:",
+
+            article.get("title")
+
+        )
+
+
+
+        if should_alert(article):
+
+
+
+            sent = send_alert_email(
+                article
             )
 
 
-            smtp.send_message(msg)
+
+            if sent:
 
 
 
-        print(
-            "No-news email sent!"
-        )
+                mark_alert_sent(
+
+                    article["id"]
+
+                )
+
+
+                print(
+
+                    "Alert completed:",
+
+                    article["title"]
+
+                )
 
 
 
-    except Exception as e:
+        else:
 
 
-        print(
-            "No-news email failed:"
-        )
+            print(
+
+                "Alert condition not matched:",
+
+                article["title"]
+
+            )
 
 
-        print(e)
+
+
+
+
+
+
+# ==========================================
+# MANUAL TEST
+# ==========================================
+
+if __name__ == "__main__":
+
+
+    print(
+        "Running Critical Alert Check..."
+    )
+
+
+    process_unhandled_critical_alerts()

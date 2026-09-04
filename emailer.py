@@ -3,165 +3,135 @@ import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
+
 from config import EMAIL_ADDRESS, EMAIL_PASSWORD
 
 
-
-def send_email(to_email, articles):
-
-
-    msg = MIMEMultipart("alternative")
+from database import get_users_for_alert
 
 
-    msg["Subject"] = "Daily Cybersecurity Digest"
-
-    msg["From"] = EMAIL_ADDRESS
-
-    msg["To"] = to_email
+from severity_filter import allow_alert
 
 
 
-    # ==========================
-    # REMOVE DUPLICATES
-    # ==========================
 
-    unique_articles = []
 
-    seen_urls = set()
+def send_email(
+        articles,
+        alert_type="daily",
+        subject=None,
+        dashboard_url="http://192.168.1.13:5000"
+):
+
+
+    """
+    Sends personalised security emails.
+
+    alert_type:
+    - daily
+    - weekly
+    - critical
+
+    """
+
+
+
+    # ======================================
+    # GET SUBSCRIBED USERS
+    # ======================================
+
+
+    users = get_users_for_alert(
+        alert_type
+    )
+
+
+
+    if not users:
+
+        print(
+            f"[{alert_type}] No subscribers found."
+        )
+
+        return
+
+
+
+
+    # ======================================
+    # FILTER ARTICLES
+    # ======================================
+
+
+    filtered_articles = []
+
 
 
     for article in articles:
 
-        url = article.get(
-            "link",
-            article.get("url", "")
+
+        severity = article.get(
+            "severity",
+            "Low"
         )
 
 
-        if url in seen_urls:
-            continue
 
-
-        seen_urls.add(url)
-
-        unique_articles.append(article)
-
-
-
-    # ==========================
-    # CREATE HTML EMAIL
-    # ==========================
-
-
-    html = """
-    <html>
-
-    <body>
-
-
-    <h1>
-    Daily Cybersecurity Digest
-    </h1>
-
-
-    <p>
-    Latest cybersecurity news and threat intelligence.
-    </p>
-
-    """
-
-
-
-    for article in unique_articles:
-
-
-        link = article.get(
-            "link",
-            article.get("url", "#")
+        filtered_articles.append(
+            article
         )
 
 
-        html += f"""
 
-        <hr>
-
-
-        <h2>
-        {article.get('title', 'No title')}
-        </h2>
+    if not filtered_articles:
 
 
-        <p>
-        <b>Severity:</b>
-        {article.get('severity', 'Unknown')}
-        </p>
+        print(
+            "No matching articles."
+        )
 
-
-        <p>
-        {article.get('summary', 'No summary available')}
-        </p>
-
-
-        <p>
-        Source:
-        <a href="{link}">
-        Read More
-        </a>
-        </p>
-
-
-        """
+        return
 
 
 
-    # ==========================
-    # UNSUBSCRIBE FOOTER
-    # ==========================
 
 
-    html += """
-
-    <hr>
-
-
-    <p style="font-size:12px;color:gray;">
-
-    You are receiving this email because you subscribed
-    to the Security Digest System.
+    # ======================================
+    # SUBJECT
+    # ======================================
 
 
-    <br><br>
+    if not subject:
 
 
-    If you no longer wish to receive these emails,
-    please contact the administrator to unsubscribe.
+        if alert_type == "critical":
 
-    </p>
-
-
-    </body>
-
-    </html>
-
-    """
+            subject = (
+                "🚨 Critical Security Alert"
+            )
 
 
+        elif alert_type == "weekly":
 
-    # Attach HTML email
-
-    html_part = MIMEText(
-        html,
-        "html"
-    )
+            subject = (
+                "📅 Weekly Security Digest"
+            )
 
 
-    msg.attach(html_part)
+        else:
+
+            subject = (
+                "📰 Daily Security Digest"
+            )
 
 
 
-    # ==========================
-    # SEND EMAIL
-    # ==========================
+
+
+
+    # ======================================
+    # SEND EMAIL TO EACH USER
+    # ======================================
 
 
     try:
@@ -182,13 +152,148 @@ def send_email(to_email, articles):
             )
 
 
-            smtp.send_message(msg)
+
+
+            for user in users:
+
+
+                email = user["email"]
+
+                threshold = user["minimum_severity"]
 
 
 
-        print(
-            "HTML email sent successfully!"
-        )
+
+
+                user_articles = []
+
+
+
+                for article in filtered_articles:
+
+
+                    if allow_alert(
+
+                        article.get(
+                            "severity",
+                            "Low"
+                        ),
+
+                        threshold
+
+                    ):
+
+                        user_articles.append(
+                            article
+                        )
+
+
+
+
+                if not user_articles:
+
+
+                    continue
+
+
+
+
+
+                html = """
+
+                <html>
+
+                <body>
+
+                <h2>
+                🛡️ Security Digest
+                </h2>
+
+                """
+
+
+
+
+
+                for article in user_articles:
+
+
+                    html += f"""
+
+                    <hr>
+
+                    <h3>
+                    {article.get('title')}
+                    </h3>
+
+
+                    <p>
+                    <b>Severity:</b>
+                    {article.get('severity')}
+                    </p>
+
+
+                    <p>
+                    {article.get('summary')}
+                    </p>
+
+
+                    <a href="{article.get('link',
+                    article.get('url','#'))}">
+                    Read More
+                    </a>
+
+                    """
+
+
+
+                html += """
+
+                </body>
+
+                </html>
+
+                """
+
+
+
+
+
+                msg = MIMEMultipart(
+                    "alternative"
+                )
+
+
+                msg["Subject"] = subject
+
+
+                msg["From"] = EMAIL_ADDRESS
+
+
+                msg["To"] = email
+
+
+
+                msg.attach(
+                    MIMEText(
+                        html,
+                        "html"
+                    )
+                )
+
+
+
+                smtp.send_message(
+                    msg
+                )
+
+
+
+                print(
+                    f"Email sent -> {email}"
+                )
+
+
 
 
 
@@ -196,7 +301,18 @@ def send_email(to_email, articles):
 
 
         print(
-            "Email failed:"
+            "Email failed:",
+            e
         )
 
-        print(e)
+
+
+
+
+
+if __name__ == "__main__":
+
+
+    print(
+        "Emailer test completed."
+    )

@@ -1,20 +1,56 @@
-import schedule
-import time
-import subprocess
 import logging
+import os
+import subprocess
 import sys
+import time
+
+import schedule
+
+
+# ==========================================
+# IMPORT WORKFLOW FUNCTIONS
+# ==========================================
+
+try:
+
+    import main
+
+    from alert import (
+        process_unhandled_critical_alerts
+    )
+
+    from database import (
+        get_articles_today
+    )
+
+    from emailer import (
+        send_email
+    )
+
+    DIRECT_IMPORT_AVAILABLE = True
+
+
+except ImportError:
+
+    DIRECT_IMPORT_AVAILABLE = False
 
 
 
-# ==========================
-# LOGGING
-# ==========================
+
+
+# ==========================================
+# LOGGING CONFIGURATION
+# ==========================================
 
 logging.basicConfig(
 
     level=logging.INFO,
 
-    format="%(asctime)s - %(levelname)s - %(message)s"
+    format="%(asctime)s - [%(levelname)s] - %(message)s",
+
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ]
 
 )
 
@@ -22,38 +58,149 @@ logging.basicConfig(
 
 
 
-# ==========================
-# DAILY DIGEST
-# ==========================
+# ==========================================
+# FEED INGESTION
+# ==========================================
+
+def run_ingestion():
+
+    logging.info(
+        "Starting Feed Ingestion..."
+    )
+
+
+    try:
+
+
+        if DIRECT_IMPORT_AVAILABLE and hasattr(
+            main,
+            "run_pipeline"
+        ):
+
+
+            main.run_pipeline()
+
+
+            logging.info(
+                "Feed Ingestion completed."
+            )
+
+
+
+        else:
+
+
+            script_path = os.path.join(
+
+                os.path.dirname(__file__),
+
+                "main.py"
+
+            )
+
+
+            subprocess.run(
+
+                [
+                    sys.executable,
+                    script_path
+                ],
+
+                check=True
+
+            )
+
+
+            logging.info(
+                "Feed Ingestion completed via main.py."
+            )
+
+
+
+    except Exception as e:
+
+
+        logging.error(
+
+            f"Feed Ingestion failed: {e}",
+
+            exc_info=True
+
+        )
+
+
+
+
+
+
+
+# ==========================================
+# DAILY DIGEST EMAIL
+# ==========================================
 
 def run_digest():
 
 
     logging.info(
-        "Starting daily digest..."
+        "Starting Daily Digest..."
     )
-
 
 
     try:
 
 
-        subprocess.run(
-
-            [
-                sys.executable,
-                "main.py"
-            ],
-
-            check=True
-
-        )
+        if DIRECT_IMPORT_AVAILABLE:
 
 
+            articles = [
 
-        logging.info(
-            "Daily digest completed."
-        )
+                dict(row)
+
+                for row in get_articles_today()
+
+            ]
+
+
+
+            if articles:
+
+
+                send_email(
+
+                    articles,
+
+                    alert_type="daily"
+
+                )
+
+
+                logging.info(
+
+                    f"Daily Digest sent: {len(articles)} articles"
+
+                )
+
+
+
+            else:
+
+
+                logging.info(
+
+                    "No articles available."
+
+                )
+
+
+
+        else:
+
+
+            logging.warning(
+
+                "Direct import unavailable."
+
+            )
 
 
 
@@ -61,7 +208,11 @@ def run_digest():
 
 
         logging.error(
-            f"Digest failed: {e}"
+
+            f"Daily Digest failed: {e}",
+
+            exc_info=True
+
         )
 
 
@@ -70,38 +221,66 @@ def run_digest():
 
 
 
-# ==========================
-# HOURLY ALERT CHECK
-# ==========================
+# ==========================================
+# CRITICAL ALERT CHECK
+# ==========================================
 
 def run_alert_check():
 
 
     logging.info(
-        "Starting alert check..."
-    )
 
+        "Starting Critical Alert Check..."
+
+    )
 
 
     try:
 
 
-        subprocess.run(
+        if DIRECT_IMPORT_AVAILABLE:
 
-            [
-                sys.executable,
+
+            process_unhandled_critical_alerts()
+
+
+            logging.info(
+
+                "Critical Alert Check completed."
+
+            )
+
+
+
+        else:
+
+
+            script_path = os.path.join(
+
+                os.path.dirname(__file__),
+
                 "alert_check.py"
-            ],
 
-            check=True
-
-        )
+            )
 
 
+            subprocess.run(
 
-        logging.info(
-            "Alert check completed."
-        )
+                [
+                    sys.executable,
+                    script_path
+                ],
+
+                check=True
+
+            )
+
+
+            logging.info(
+
+                "Alert check completed."
+
+            )
 
 
 
@@ -109,7 +288,11 @@ def run_alert_check():
 
 
         logging.error(
-            f"Alert check failed: {e}"
+
+            f"Critical Alert failed: {e}",
+
+            exc_info=True
+
         )
 
 
@@ -118,23 +301,21 @@ def run_alert_check():
 
 
 
-# ==========================
-# SCHEDULE
-# ==========================
+# ==========================================
+# DEMO SCHEDULE CONFIGURATION
+# ==========================================
 
+# For supervisor demonstration only
 
-# Daily digest at 07:00 AM
+# Feed collection every 2 minute
 
-schedule.every().day.at(
-    "07:00"
-).do(
-    run_digest
+schedule.every(2).minutes.do(
+    run_ingestion
 )
 
 
 
-
-# TEST MODE: Security monitoring every 2 minutes
+# Critical alert checking every 2 minute
 
 schedule.every(2).minutes.do(
     run_alert_check
@@ -142,38 +323,84 @@ schedule.every(2).minutes.do(
 
 
 
+# Daily digest every 10 minutes for demo
 
-
-# ==========================
-# START
-# ==========================
-
-logging.info(
-    "Scheduler started."
-)
-
-
-logging.info(
-    "Daily digest: 07:00 AM"
-)
-
-
-logging.info(
-    "Alert monitoring: every hour"
+schedule.every(10).minutes.do(
+    run_digest
 )
 
 
 
 
 
-# ==========================
-# KEEP RUNNING
-# ==========================
-
-while True:
 
 
-    schedule.run_pending()
+# ==========================================
+# START SCHEDULER
+# ==========================================
+
+if __name__ == "__main__":
 
 
-    time.sleep(30)
+    logging.info(
+        "=========================================="
+    )
+
+    logging.info(
+        " Security Digest Scheduler DEMO Mode"
+    )
+
+    logging.info(
+        "=========================================="
+    )
+
+
+    logging.info(
+        "Feed Ingestion : Every 2 minutes"
+    )
+
+
+    logging.info(
+        "Critical Alert : Every 2 minutes"
+    )
+
+
+    logging.info(
+        "Daily Digest   : Every 10 minutes"
+    )
+
+
+    logging.info(
+        "Press CTRL+C to stop."
+    )
+
+
+
+
+    # Run immediately when started
+
+    run_ingestion()
+
+    run_alert_check()
+
+
+
+    try:
+
+
+        while True:
+
+
+            schedule.run_pending()
+
+
+            time.sleep(10)
+
+
+
+    except KeyboardInterrupt:
+
+
+        logging.info(
+            "Scheduler stopped."
+        )

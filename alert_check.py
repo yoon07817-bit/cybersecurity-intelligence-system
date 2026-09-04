@@ -2,53 +2,80 @@ from fetcher import fetch_articles
 from summariser import summarize
 from scorer import score_article
 
+
 from database import (
     create_table,
     save_article,
+    article_exists,
     get_critical_articles,
     mark_alert_sent
 )
+
 
 from alert import (
     should_alert,
     send_alert_email
 )
 
-from config import EMAIL_ADDRESS
 
+
+
+# ==========================================
+# HOURLY SECURITY ALERT CHECK
+# ==========================================
 
 
 def run_alert_check():
 
+
     print("\n")
-    print("=" * 50)
+    print("=" * 60)
     print("HOURLY SECURITY ALERT CHECK")
-    print("=" * 50)
+    print("=" * 60)
 
 
 
-    # Create database
+
+    # Create database tables if missing
 
     create_table()
 
 
 
-    # ==========================
-    # FETCH RSS ARTICLES
-    # ==========================
 
-    articles = fetch_articles()
+    # ======================================
+    # FETCH SECURITY NEWS
+    # ======================================
 
+    try:
 
-    print(
-        f"Fetched {len(articles)} articles"
-    )
+        articles = fetch_articles()
 
 
+        print(
+            f"Fetched {len(articles)} articles"
+        )
 
-    # ==========================
-    # CHECK ONLY CRITICAL
-    # ==========================
+
+    except Exception as e:
+
+
+        print(
+            "RSS fetching failed:",
+            e
+        )
+
+
+        return
+
+
+
+
+
+    # ======================================
+    # PROCESS ARTICLES
+    # ======================================
+
 
     for article in articles:
 
@@ -56,37 +83,51 @@ def run_alert_check():
         try:
 
 
+            title = article.get(
+                "title",
+                "Unknown"
+            )
+
+
             print(
                 "\nChecking:",
-                article["title"]
+                title
             )
 
 
 
-            # Quick scoring first
+            description = article.get(
+                "description",
+                ""
+            )
+
+
+
+            # ------------------------------
+            # Quick Threat Scoring
+            # ------------------------------
+
 
             quick_result = score_article(
 
-                article["title"],
+                title,
 
-                article.get(
-                    "description",
-                    ""
-                )
+                description
 
             )
 
 
 
-            # Ignore non-critical
-
             if quick_result["severity"] != "Critical":
+
 
                 print(
                     "Not Critical - skipped"
                 )
 
+
                 continue
+
 
 
 
@@ -96,40 +137,72 @@ def run_alert_check():
 
 
 
-            # Get article body
 
-            text = article.get(
+
+            # ------------------------------
+            # Check duplicate article
+            # ------------------------------
+
+
+            if article_exists(
+                article["url"]
+            ):
+
+
+                print(
+                    "Already exists - skipped"
+                )
+
+
+                continue
+
+
+
+
+
+
+            # ------------------------------
+            # Generate Summary
+            # ------------------------------
+
+
+            content = article.get(
                 "content",
                 ""
             )
 
 
-            if not text:
 
-                text = article.get(
-                    "description",
-                    article["title"]
-                )
+            if not content:
 
 
+                content = description or title
 
-            # AI summary only for Critical
+
+
+
 
             summary = summarize(
 
-                article["title"],
+                title,
 
-                text
+                content
 
             )
 
 
 
-            # Final score
 
-            result = score_article(
 
-                article["title"],
+
+            # ------------------------------
+            # Final scoring
+            # ------------------------------
+
+
+            final_result = score_article(
+
+                title,
 
                 summary
 
@@ -137,17 +210,34 @@ def run_alert_check():
 
 
 
+
             article["summary"] = summary
 
-            article["score"] = result["score"]
+            article["score"] = (
+                final_result["score"]
+            )
 
-            article["severity"] = result["severity"]
+            article["severity"] = (
+                final_result["severity"]
+            )
 
 
 
-            # Save Critical article
 
-            save_article(article)
+
+            # Save only critical article
+
+
+            save_article(
+                article
+            )
+
+
+
+            print(
+                "Critical article saved:",
+                title
+            )
 
 
 
@@ -155,7 +245,7 @@ def run_alert_check():
 
 
             print(
-                "Processing failed:",
+                "Article processing failed:",
                 e
             )
 
@@ -163,9 +253,12 @@ def run_alert_check():
 
 
 
-    # ==========================
-    # SEND ALERT EMAIL
-    # ==========================
+
+
+    # ======================================
+    # SEND CRITICAL ALERTS
+    # ======================================
+
 
     critical_articles = get_critical_articles()
 
@@ -175,56 +268,86 @@ def run_alert_check():
 
 
         print(
-            "No new Critical alerts."
+            "\nNo new Critical alerts."
         )
+
 
         return
 
 
 
 
+
     print(
 
-        f"{len(critical_articles)} Critical alerts found."
+        f"\n{len(critical_articles)} Critical alert(s) ready."
 
     )
+
+
 
 
 
     for article in critical_articles:
 
 
-        if should_alert(article):
+        try:
 
 
-            send_alert_email(
-
-                article,
-
-                EMAIL_ADDRESS
-
-            )
+            if should_alert(article):
 
 
-            mark_alert_sent(
+                send_alert_email(
+                    article
+                )
 
-                article["id"]
 
-            )
+
+                mark_alert_sent(
+                    article["id"]
+                )
+
+
+
+                print(
+                    "Alert sent:",
+                    article["title"]
+                )
+
+
+
+            else:
+
+
+                print(
+                    "Alert condition not matched:",
+                    article["title"]
+                )
+
+
+
+
+
+        except Exception as e:
 
 
             print(
-
-                "Alert sent:",
-
-                article["title"]
-
+                "Alert sending failed:",
+                e
             )
 
 
 
 
 
+
+
+# ==========================================
+# MANUAL TEST
+# ==========================================
+
+
 if __name__ == "__main__":
+
 
     run_alert_check()

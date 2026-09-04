@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - Security Digest{% endblock %}
+
+
+{% block content %}
+
+<div class="row justify-content-center">
+
+    <div class="col-md-8 col-lg-6">
+
+
+        <div class="card shadow-sm">
+
+
+            <div class="card-header bg-dark text-white d-flex align-items-center justify-content-between py-3">
+
+                <h5 class="m-0 fw-bold">
+                    ⚙️ User Settings
+                </h5>
+
+                <span class="badge bg-secondary">
+                    Preferences
+                </span>
+
+            </div>
+
+
+
+            <div class="card-body p-4">
+
+
+                <form method="POST" action="{{ url_for('settings') }}">
+
+
+                    <!-- Registered Email -->
+
+                    <div class="mb-3">
+
+                        <label class="form-label text-muted small fw-bold">
+                            REGISTERED EMAIL
+                        </label>
+
+
+                        <input
+                            type="email"
+                            class="form-control bg-light"
+                            value="{{ user.email }}"
+                            readonly
+                            disabled>
+
+                    </div>
+
+
+
+
+                    <hr class="my-4">
+
+
+
+                    <h6 class="fw-bold mb-3">
+                        Alert & Notification Preferences
+                    </h6>
+
+
+
+
+
+                    <!-- Minimum Severity -->
+
+                    <div class="mb-3">
+
+
+                        <label class="form-label text-muted small fw-bold">
+
+                            MINIMUM SEVERITY THRESHOLD
+
+                        </label>
+
+
+
+                        <select name="minimum_severity"
+                                class="form-select">
+
+
+                            <option value="Low"
+                            {% if user.minimum_severity == "Low" %}
+                                selected
+                            {% endif %}>
+                                Low (All Alerts)
+                            </option>
+
+
+
+                            <option value="Medium"
+                            {% if user.minimum_severity == "Medium" %}
+                                selected
+                            {% endif %}>
+                                Medium & Above
+                            </option>
+
+
+
+                            <option value="High"
+                            {% if user.minimum_severity == "High" %}
+                                selected
+                            {% endif %}>
+                                High & Critical Only
+                            </option>
+
+
+
+                            <option value="Critical"
+                            {% if user.minimum_severity == "Critical" %}
+                                selected
+                            {% endif %}>
+                                Critical Only
+                            </option>
+
+
+                        </select>
+
+
+
+                        <div class="form-text">
+
+                            Filter notifications below selected severity.
+
+                        </div>
+
+
+                    </div>
+
+
+
+
+
+
+                    <!-- Daily Digest -->
+
+                    <div class="form-check mb-2">
+
+
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="receive_daily_digest"
+                            id="dailyDigest"
+
+                            {% if user.receive_daily_digest == 1 %}
+                                checked
+                            {% endif %}>
+
+
+                        <label class="form-check-label"
+                               for="dailyDigest">
+
+                            Receive Daily Security Digest
+
+                        </label>
+
+
+                    </div>
+
+
+
+
+
+
+
+                    <!-- Critical Alerts -->
+
+                    <div class="form-check mb-4">
+
+
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            name="receive_critical_alerts"
+                            id="criticalAlerts"
+
+
+                            {% if user.receive_critical_alerts == 1 %}
+                                checked
+                            {% endif %}>
+
+
+                        <label class="form-check-label"
+                               for="criticalAlerts">
+
+                            Receive Critical Security Alerts
+
+                        </label>
+
+
+                    </div>
+
+
+
+
+
+
+
+
+                    <!-- Buttons -->
+
+                    <div class="d-flex justify-content-end gap-2">
+
+
+                        <a href="{{ url_for('home') }}"
+                           class="btn btn-outline-secondary">
+
+                            Cancel
+
+                        </a>
+
+
+
+
+                        <button type="submit"
+                                class="btn btn-primary">
+
+                            Save Preferences
+
+                        </button>
+
+
+                    </div>
+
+
+
+
+                </form>
+
+
+            </div>
+
+
+        </div>
+
+
+    </div>
+
+
+</div>
+
+
+{% endblock %}

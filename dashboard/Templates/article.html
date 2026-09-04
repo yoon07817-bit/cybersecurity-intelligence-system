@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} - Article Details</title>
+
+    <!-- Bootstrap 5 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .badge-critical { background-color: #dc3545; color: #fff; }
+        .badge-high { background-color: #fd7e14; color: #fff; }
+        .badge-medium { background-color: #ffc107; color: #000; }
+        .badge-low { background-color: #198754; color: #fff; }
+        .summary-content h1, .summary-content h2, .summary-content h3 {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-top: 1rem;
+            margin-bottom: 0.5rem;
+            color: #212529;
+        }
+        .summary-content ul {
+            padding-left: 1.25rem;
+            margin-bottom: 0.75rem;
+        }
+    </style>
+</head>
+<body class="container my-4">
+
+    <!-- Navigation Header -->
+    <nav class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+        <h2 class="h4 m-0">🛡️ Security Digest</h2>
+        <div>
+            <a href="/" class="btn btn-outline-dark btn-sm">Home</a>
+            <a href="/stats" class="btn btn-outline-primary btn-sm">Stats</a>
+            <a href="/about" class="btn btn-outline-secondary btn-sm">About</a>
+        </div>
+    </nav>
+
+    <!-- Article Header Card -->
+    <div class="card p-4 mb-4 shadow-sm">
+        <h1 class="h3 fw-bold mb-3">{{ article.title }}</h1>
+
+        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+            <!-- Severity Badge -->
+            {% if article.severity == 'Critical' %}
+                <span class="badge badge-critical px-2 py-1">Severity: Critical</span>
+            {% elif article.severity == 'High' %}
+                <span class="badge badge-high px-2 py-1">Severity: High</span>
+            {% elif article.severity == 'Medium' %}
+                <span class="badge badge-medium px-2 py-1">Severity: Medium</span>
+            {% else %}
+                <span class="badge badge-low px-2 py-1">Severity: Low</span>
+            {% endif %}
+
+            <!-- Category -->
+            <span class="badge bg-secondary">
+                Category: {{ article.category if article.category else 'General' }}
+            </span>
+        </div>
+
+        <div class="text-muted small">
+            <p class="m-0"><strong>Source:</strong> {{ article.source if article.source else 'N/A' }}</p>
+            <p class="m-0"><strong>Published Date:</strong> {{ article.published_date if article.published_date else article.created_at }}</p>
+        </div>
+    </div>
+
+    <!-- Article Summary Card (HTML Rendered) -->
+    <div class="card p-4 mb-4 shadow-sm">
+        <h2 class="h5 fw-bold border-bottom pb-2 mb-3">Summary</h2>
+        <div class="summary-content">
+            {{ article.summary | safe }}
+        </div>
+    </div>
+
+    <!-- External Link -->
+    {% if article.url %}
+    <div class="mb-4">
+        <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
+            Read Original Article ↗
+        </a>
+    </div>
+    {% endif %}
+
+</body>
+</html>
