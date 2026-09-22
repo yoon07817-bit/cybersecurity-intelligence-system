@@ -1,55 +1,487 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>About Security Dashboard</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-</head>
+{% extends "base.html" %}
 
-<body class="container mt-4 mb-5">
 
-    <nav class="mb-4">
-        <a href="/" class="btn btn-dark">Home</a>
-        <a href="/stats" class="btn btn-primary">Stats</a>
-        <a href="/about" class="btn btn-secondary">About</a>
-    </nav>
+{% block title %}
+About Security Digest
+{% endblock %}
 
-    <h1>🛡️ About Security Intelligence Dashboard</h1>
 
-    <div class="card mt-4 shadow-sm">
+{% block content %}
+
+
+<div class="container mt-4 mb-5">
+
+
+    <h1 class="mb-4">
+        🛡️ About Security Digest
+    </h1>
+
+
+    <div class="card shadow-sm">
+
+
         <div class="card-body">
 
-            <h4>📌 Executive Overview</h4>
+
+            <!-- ================================================== -->
+            <!-- PROJECT OVERVIEW -->
+            <!-- ================================================== -->
+
+            <h4>
+                📌 Project Overview
+            </h4>
+
+
             <p>
-                The <strong>Security Intelligence Dashboard</strong> is an automated threat monitoring and analysis platform that collects, summarizes, and visualizes cybersecurity intelligence in real time. Designed to eliminate daily information overload, the system automatically aggregates security news, uses AI to distill threat reports, scores severity levels, and delivers proactive notifications—making security monitoring effortless for beginners, students, and IT professionals.
+                <strong>Security Digest</strong> is an automated
+                cybersecurity threat intelligence monitoring system
+                designed to collect, analyse, and deliver security
+                information from multiple online sources.
+                The system reduces the difficulty of manually
+                monitoring cybersecurity news by automatically
+                gathering security reports, analysing their risk
+                level, generating concise summaries, and presenting
+                useful intelligence through a web-based dashboard.
             </p>
 
-            <h4 class="mt-4">⚙️ System Architecture & Technology Stack</h4>
-            <ul>
-                <li><strong>Backend Core:</strong> Python 3.11+ – Handles RSS feed ingestion (<code>feedparser</code>), deduplication, and pipeline execution.</li>
-                <li><strong>AI Summarization Engine:</strong> Groq API – Converts long security articles into concise 2-sentence summaries.</li>
-                <li><strong>Web Framework:</strong> Flask – Delivers dynamic routing, database management, and dashboard rendering.</li>
-                <li><strong>Database Management:</strong> SQLite – Relational file-based database storing threat logs, summaries, and severity metrics.</li>
-                <li><strong>Frontend & Visualization:</strong> HTML5, Bootstrap, & Chart.js – Mobile-responsive UI with dynamic trend analytics.</li>
-                <li><strong>Automation & Email Engine:</strong> <code>schedule</code> & <code>smtplib</code> – Dispatches daily HTML email digests and real-time critical alerts.</li>
-            </ul>
 
-            <h4 class="mt-4">🔑 Key Platform Features</h4>
+            <p>
+                The platform combines automated data collection,
+                AI-assisted summarisation, threat severity
+                classification, CVE detection, protection
+                recommendations, database management, dashboard
+                visualisation, and email notification features to
+                provide users with a simple Security Operations
+                Centre (SOC)-style monitoring environment.
+            </p>
+
+
+            <!-- ================================================== -->
+            <!-- SYSTEM WORKFLOW -->
+            <!-- ================================================== -->
+
+            <h4 class="mt-4">
+                ⚙️ System Workflow
+            </h4>
+
+
             <ol>
-                <li><strong>Automated Threat Monitoring:</strong> Continuous aggregation of cyber threat feeds across Security, Privacy, and Compliance.</li>
-                <li><strong>AI-Powered Summaries:</strong> Automatically distills complex security write-ups into quick, actionable insights.</li>
-                <li><strong>Custom Severity Scoring:</strong> Algorithmic keyword scoring engine (<em>Critical, High, Medium, Low</em>).</li>
-                <li><strong>Real-Time Critical Alerts:</strong> Instant SMTP email notifications for emergency vulnerabilities and zero-day threats.</li>
-                <li><strong>Daily HTML Email Digest:</strong> Scheduled daily email summaries featuring color-coded threat badges.</li>
-                <li><strong>Advanced Search & Analytics:</strong> Keyword filtering paired with Chart.js trend analytics over time.</li>
+
+
+                <li class="mb-2">
+
+                    <strong>Threat Data Collection:</strong>
+
+                    The system automatically collects cybersecurity
+                    articles from configured RSS security feeds.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>Article Filtering:</strong>
+
+                    Collected articles are filtered according to the
+                    configured time period, and duplicate articles
+                    are removed before further processing.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>Article Extraction:</strong>
+
+                    The system attempts to extract the article content
+                    from the original webpage. If webpage extraction
+                    is unavailable, the RSS description is used as a
+                    fallback.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>AI Summarisation:</strong>
+
+                    Available article content is converted into a
+                    concise security summary using the Groq API to
+                    improve readability and reduce the time required
+                    to review security reports.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>Threat Classification and Scoring:</strong>
+
+                    Articles are analysed using a rule-based scoring
+                    engine. The resulting threat score and
+                    classification rules are used to assign
+                    <strong>Critical, High, Medium,</strong> or
+                    <strong>Low</strong> severity levels.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>CVE Detection:</strong>
+
+                    The system searches the available article
+                    information for valid CVE identifiers and records
+                    detected CVEs while removing duplicate
+                    identifiers.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>Protection Recommendation:</strong>
+
+                    Security recommendations are generated according
+                    to the article category and severity to provide
+                    practical guidance for responding to identified
+                    threats.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>Database Storage:</strong>
+
+                    Processed security intelligence, including article
+                    information, summaries, severity, scores, CVEs,
+                    recommendations, and alert status, is stored using
+                    SQLite.
+
+                </li>
+
+
+                <li class="mb-2">
+
+                    <strong>Notification Delivery:</strong>
+
+                    The system sends daily security digest emails and
+                    Critical security alerts according to user
+                    notification preferences.
+
+                </li>
+
+
             </ol>
 
-            <h4 class="mt-4">📐 Project Purpose & Scope</h4>
-            <p class="mb-0">
-                This platform serves as a fully functional, beginner-friendly prototype for automated threat intelligence aggregation and personal SOC (Security Operations Center) monitoring.
+
+            <!-- ================================================== -->
+            <!-- TECHNOLOGY STACK -->
+            <!-- ================================================== -->
+
+            <h4 class="mt-4">
+                💻 Technology Stack
+            </h4>
+
+
+            <ul>
+
+
+                <li>
+                    <strong>Programming Language:</strong>
+                    Python – Core backend processing, automation,
+                    threat analysis, and email functionality.
+                </li>
+
+
+                <li>
+                    <strong>Web Framework:</strong>
+                    Flask – Provides dashboard routing,
+                    authentication, article views, and web
+                    application functionality.
+                </li>
+
+
+                <li>
+                    <strong>Database:</strong>
+                    SQLite – Stores users, articles, threat scores,
+                    summaries, CVE information, recommendations,
+                    and notification status.
+                </li>
+
+
+                <li>
+                    <strong>AI Integration:</strong>
+                    Groq API – Generates concise cybersecurity
+                    article summaries.
+                </li>
+
+
+                <li>
+                    <strong>Frontend:</strong>
+                    HTML5, Bootstrap, and JavaScript – Creates the
+                    responsive user interface and dashboard
+                    functionality.
+                </li>
+
+
+                <li>
+                    <strong>Data Visualisation:</strong>
+                    Chart.js – Displays security statistics and
+                    threat trends through interactive charts.
+                </li>
+
+
+                <li>
+                    <strong>RSS Processing:</strong>
+                    Feedparser and HTTP requests – Collect and
+                    process cybersecurity RSS feeds.
+                </li>
+
+
+                <li>
+                    <strong>Email Automation:</strong>
+                    SMTP and Python email modules – Deliver daily
+                    security digest emails and Critical security
+                    alerts.
+                </li>
+
+
+            </ul>
+
+
+            <!-- ================================================== -->
+            <!-- MAIN FEATURES -->
+            <!-- ================================================== -->
+
+            <h4 class="mt-4">
+                🔑 Main Features
+            </h4>
+
+
+            <ul>
+
+
+                <li>
+                    Automated cybersecurity news collection from
+                    multiple RSS sources.
+                </li>
+
+
+                <li>
+                    Automatic filtering and duplicate detection.
+                </li>
+
+
+                <li>
+                    AI-generated summaries for security reports.
+                </li>
+
+
+                <li>
+                    Threat classification using
+                    <strong>Critical, High, Medium, and Low</strong>
+                    severity levels.
+                </li>
+
+
+                <li>
+                    Threat score and keyword analysis.
+                </li>
+
+
+                <li>
+                    Automatic CVE identification.
+                </li>
+
+
+                <li>
+                    Protection recommendations based on security
+                    category and severity.
+                </li>
+
+
+                <li>
+                    Dashboard displaying security intelligence
+                    information.
+                </li>
+
+
+                <li>
+                    Search and filtering of security articles.
+                </li>
+
+
+                <li>
+                    User authentication and account management.
+                </li>
+
+
+                <li>
+                    Custom notification preferences and minimum
+                    severity thresholds.
+                </li>
+
+
+                <li>
+                    Daily cybersecurity digest emails.
+                </li>
+
+
+                <li>
+                    Critical security alert notifications.
+                </li>
+
+
+                <li>
+                    Alert delivery tracking to reduce duplicate
+                    notifications.
+                </li>
+
+
+                <li>
+                    Admin management functions for controlling
+                    user accounts.
+                </li>
+
+
+            </ul>
+
+
+            <!-- ================================================== -->
+            <!-- EMAIL NOTIFICATION SYSTEM -->
+            <!-- ================================================== -->
+
+            <h4 class="mt-4">
+                📧 Email Notification System
+            </h4>
+
+
+            <p>
+                Security Digest provides two main types of email
+                notifications.
             </p>
 
+
+            <p>
+
+                <strong>Daily Security Digest:</strong>
+
+                Provides users with a summary of the cybersecurity
+                articles collected and processed by the system.
+
+            </p>
+
+
+            <p>
+
+                <strong>Critical Security Alerts:</strong>
+
+                Provides notifications when an article is classified
+                as <strong>Critical</strong> according to the
+                implemented severity rules.
+
+            </p>
+
+
+            <p>
+                Alert delivery is controlled by user preferences,
+                including notification type and minimum severity
+                threshold. Critical articles are stored in the
+                database with an alert status. After an alert is
+                successfully sent, the delivery status is updated to
+                help prevent the same alert from being sent again.
+            </p>
+
+
+            <p>
+                The alert checking process reads Critical articles
+                from the database rather than repeatedly collecting
+                RSS feeds. This separates the article collection
+                process from the notification process.
+            </p>
+
+
+            <!-- ================================================== -->
+            <!-- AUTOMATION -->
+            <!-- ================================================== -->
+
+            <h4 class="mt-4">
+                ⏰ Automated Scheduling
+            </h4>
+
+
+            <p>
+                The system uses an automated scheduler to run the
+                main background tasks without requiring each process
+                to be started manually.
+            </p>
+
+
+            <ul>
+
+                <li>
+                    <strong>Article Collection:</strong>
+                    Periodically collects and processes new
+                    cybersecurity articles.
+                </li>
+
+
+                <li>
+                    <strong>Critical Alert Check:</strong>
+                    Periodically checks the database for unsent
+                    Critical security alerts.
+                </li>
+
+
+                <li>
+                    <strong>Daily Digest:</strong>
+                    Sends the daily security digest according to
+                    the configured schedule.
+                </li>
+
+            </ul>
+
+
+            <p class="text-muted small">
+                The scheduling intervals can be temporarily shortened
+                during system demonstrations and testing to allow
+                automated functions to be verified without waiting
+                for the normal production schedule.
+            </p>
+
+
+            <!-- ================================================== -->
+            <!-- PROJECT PURPOSE -->
+            <!-- ================================================== -->
+
+            <h4 class="mt-4">
+                🎯 Project Purpose
+            </h4>
+
+
+            <p class="mb-0">
+
+                The purpose of Security Digest is to provide an
+                automated and user-friendly threat intelligence
+                platform that helps users monitor cybersecurity risks
+                efficiently. The system demonstrates how automation,
+                artificial intelligence, databases, web technologies,
+                threat classification, and email services can be
+                combined to support cybersecurity monitoring and
+                threat intelligence activities.
+
+            </p>
+
+
         </div>
+
+
     </div>
 
-</body>
-</html>
+
+</div>
+
+
+{% endblock %}

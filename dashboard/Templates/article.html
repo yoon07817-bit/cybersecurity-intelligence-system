@@ -1,90 +1,568 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ article.title }} - Article Details</title>
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>
+        {{ article.title }} - Article Details
+    </title>
+
 
     <!-- Bootstrap 5 CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+    >
+
 
     <style>
+
         body {
             background-color: #f8f9fa;
         }
-        .badge-critical { background-color: #dc3545; color: #fff; }
-        .badge-high { background-color: #fd7e14; color: #fff; }
-        .badge-medium { background-color: #ffc107; color: #000; }
-        .badge-low { background-color: #198754; color: #fff; }
-        .summary-content h1, .summary-content h2, .summary-content h3 {
+
+
+        /* Severity badges */
+
+        .badge-critical {
+            background-color: #dc3545;
+            color: #fff;
+        }
+
+        .badge-high {
+            background-color: #fd7e14;
+            color: #fff;
+        }
+
+        .badge-medium {
+            background-color: #ffc107;
+            color: #000;
+        }
+
+        .badge-low {
+            background-color: #198754;
+            color: #fff;
+        }
+
+
+        /* Summary formatting */
+
+        .summary-content h1,
+        .summary-content h2,
+        .summary-content h3 {
+
             font-size: 1.15rem;
+
             font-weight: 700;
+
             margin-top: 1rem;
+
             margin-bottom: 0.5rem;
+
             color: #212529;
         }
+
+
         .summary-content ul {
+
             padding-left: 1.25rem;
+
             margin-bottom: 0.75rem;
         }
+
+
+        .summary-content p {
+
+            line-height: 1.6;
+
+        }
+
+
+        /* CVE section */
+
+        .cve-id {
+
+            font-weight: 700;
+
+            color: #b02a37;
+
+            font-size: 1rem;
+        }
+
+
+        .cve-item {
+
+            border: 1px solid #dee2e6;
+
+            border-radius: 8px;
+
+            padding: 12px 15px;
+
+            margin-bottom: 10px;
+
+            background-color: #fff;
+        }
+
+
+        /* Recommendation section */
+
+        .recommendation-box {
+
+            background-color: #f8f9fa;
+
+            border-left: 5px solid #0d6efd;
+
+            padding: 15px;
+
+            border-radius: 5px;
+
+            line-height: 1.6;
+        }
+
+
+        /* Information labels */
+
+        .info-label {
+
+            font-weight: 600;
+
+            color: #495057;
+        }
+
     </style>
+
 </head>
+
+
 <body class="container my-4">
 
-    <!-- Navigation Header -->
-    <nav class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
-        <h2 class="h4 m-0">🛡️ Security Digest</h2>
+
+    <!-- =====================================================
+         NAVIGATION HEADER
+         ===================================================== -->
+
+    <nav
+        class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom"
+    >
+
+        <h2 class="h4 m-0">
+            🛡️ Security Digest
+        </h2>
+
+
         <div>
-            <a href="/" class="btn btn-outline-dark btn-sm">Home</a>
-            <a href="/stats" class="btn btn-outline-primary btn-sm">Stats</a>
-            <a href="/about" class="btn btn-outline-secondary btn-sm">About</a>
+
+            <a
+                href="/"
+                class="btn btn-outline-dark btn-sm"
+            >
+                Home
+            </a>
+
+
+            <a
+                href="/stats"
+                class="btn btn-outline-primary btn-sm"
+            >
+                Stats
+            </a>
+
+
+            <a
+                href="/about"
+                class="btn btn-outline-secondary btn-sm"
+            >
+                About
+            </a>
+
         </div>
+
     </nav>
 
-    <!-- Article Header Card -->
-    <div class="card p-4 mb-4 shadow-sm">
-        <h1 class="h3 fw-bold mb-3">{{ article.title }}</h1>
 
-        <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+
+    <!-- =====================================================
+         ARTICLE HEADER CARD
+         ===================================================== -->
+
+    <div class="card p-4 mb-4 shadow-sm">
+
+
+        <h1 class="h3 fw-bold mb-3">
+
+            {{ article.title }}
+
+        </h1>
+
+
+        <div
+            class="d-flex flex-wrap gap-2 align-items-center mb-3"
+        >
+
+
             <!-- Severity Badge -->
+
             {% if article.severity == 'Critical' %}
-                <span class="badge badge-critical px-2 py-1">Severity: Critical</span>
+
+                <span
+                    class="badge badge-critical px-2 py-1"
+                >
+                    Severity: Critical
+                </span>
+
+
             {% elif article.severity == 'High' %}
-                <span class="badge badge-high px-2 py-1">Severity: High</span>
+
+                <span
+                    class="badge badge-high px-2 py-1"
+                >
+                    Severity: High
+                </span>
+
+
             {% elif article.severity == 'Medium' %}
-                <span class="badge badge-medium px-2 py-1">Severity: Medium</span>
+
+                <span
+                    class="badge badge-medium px-2 py-1"
+                >
+                    Severity: Medium
+                </span>
+
+
             {% else %}
-                <span class="badge badge-low px-2 py-1">Severity: Low</span>
+
+                <span
+                    class="badge badge-low px-2 py-1"
+                >
+                    Severity: Low
+                </span>
+
             {% endif %}
 
+
+
             <!-- Category -->
+
             <span class="badge bg-secondary">
-                Category: {{ article.category if article.category else 'General' }}
+
+                Category:
+                {{
+                    article.category
+                    if article.category
+                    else 'General'
+                }}
+
             </span>
+
+
         </div>
+
+
+
+        <!-- Article Metadata -->
 
         <div class="text-muted small">
-            <p class="m-0"><strong>Source:</strong> {{ article.source if article.source else 'N/A' }}</p>
-            <p class="m-0"><strong>Published Date:</strong> {{ article.published_date if article.published_date else article.created_at }}</p>
+
+            <p class="m-0">
+
+                <strong>Source:</strong>
+
+                {{
+                    article.source
+                    if article.source
+                    else 'N/A'
+                }}
+
+            </p>
+
+
+            <p class="m-0">
+
+                <strong>Published Date:</strong>
+
+                {{
+                    article.published_date
+                    if article.published_date
+                    else article.created_at
+                }}
+
+            </p>
+
+
+            {% if article.score is not none %}
+
+            <p class="m-0">
+
+                <strong>Threat Score:</strong>
+
+                {{ article.score }}
+
+            </p>
+
+            {% endif %}
+
         </div>
+
     </div>
 
-    <!-- Article Summary Card (HTML Rendered) -->
+
+
+    <!-- =====================================================
+         ARTICLE SUMMARY
+         ===================================================== -->
+
     <div class="card p-4 mb-4 shadow-sm">
-        <h2 class="h5 fw-bold border-bottom pb-2 mb-3">Summary</h2>
+
+
+        <h2
+            class="h5 fw-bold border-bottom pb-2 mb-3"
+        >
+            Summary
+        </h2>
+
+
         <div class="summary-content">
+
             {{ article.summary | safe }}
+
         </div>
+
     </div>
 
-    <!-- External Link -->
-    {% if article.url %}
-    <div class="mb-4">
-        <a href="{{ article.url }}" target="_blank" rel="noopener noreferrer" class="btn btn-primary">
-            Read Original Article ↗
-        </a>
+
+
+    <!-- =====================================================
+         CVE INFORMATION
+         ===================================================== -->
+
+    <div class="card p-4 mb-4 shadow-sm">
+
+
+        <h2
+            class="h5 fw-bold border-bottom pb-2 mb-3"
+        >
+            CVE Information
+        </h2>
+
+
+        {% if cves %}
+
+
+            <p class="text-muted small">
+
+                The following CVE identifier(s) were
+                detected in the available article
+                information.
+
+            </p>
+
+
+            {% for cve in cves %}
+
+                <div class="cve-item">
+
+
+                    <div>
+
+                        <span class="cve-id">
+
+                            {{ cve.cve_id }}
+
+                        </span>
+
+                    </div>
+
+
+
+                    {% if cve.cvss_score %}
+
+                        <div class="mt-2">
+
+                            <span class="info-label">
+                                CVSS Score:
+                            </span>
+
+                            {{ cve.cvss_score }}
+
+                        </div>
+
+                    {% endif %}
+
+
+
+                    {% if cve.severity %}
+
+                        <div class="mt-1">
+
+                            <span class="info-label">
+                                CVE Severity:
+                            </span>
+
+                            {{ cve.severity }}
+
+                        </div>
+
+                    {% endif %}
+
+
+
+                    {% if cve.affected_product %}
+
+                        <div class="mt-1">
+
+                            <span class="info-label">
+                                Affected Product:
+                            </span>
+
+                            {{ cve.affected_product }}
+
+                        </div>
+
+                    {% endif %}
+
+
+
+                    {% if cve.description %}
+
+                        <div class="mt-2">
+
+                            <span class="info-label">
+                                Description:
+                            </span>
+
+                            {{ cve.description }}
+
+                        </div>
+
+                    {% endif %}
+
+
+                </div>
+
+            {% endfor %}
+
+
+        {% else %}
+
+
+            <div class="alert alert-light border mb-0">
+
+                <strong>
+                    No CVE detected.
+                </strong>
+
+                <br>
+
+                <small class="text-muted">
+
+                    No CVE identifier was found in
+                    the available article information.
+
+                </small>
+
+            </div>
+
+
+        {% endif %}
+
     </div>
+
+
+
+    <!-- =====================================================
+         PROTECTION RECOMMENDATION
+         ===================================================== -->
+
+    <div class="card p-4 mb-4 shadow-sm">
+
+
+        <h2
+            class="h5 fw-bold border-bottom pb-2 mb-3"
+        >
+            Protection Recommendation
+        </h2>
+
+
+        {% if recommendation %}
+
+
+            <div class="recommendation-box">
+
+                {{ recommendation }}
+
+            </div>
+
+
+        {% else %}
+
+
+            <div class="alert alert-light border mb-0">
+
+                No specific protection recommendation
+                is available for this article.
+
+            </div>
+
+
+        {% endif %}
+
+    </div>
+
+
+
+    <!-- =====================================================
+         EXTERNAL LINK
+         ===================================================== -->
+
+    {% if article.url %}
+
+    <div class="mb-4">
+
+
+        <a
+            href="{{ article.url }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-primary"
+        >
+
+            Read Original Article ↗
+
+        </a>
+
+
+    </div>
+
     {% endif %}
 
+
+
+    <!-- =====================================================
+         BACK TO DASHBOARD
+         ===================================================== -->
+
+    <div class="mb-5">
+
+        <a
+            href="/"
+            class="btn btn-outline-secondary"
+        >
+
+            ← Back to Threat Intelligence Feed
+
+        </a>
+
+    </div>
+
+
 </body>
+
 </html>

@@ -7,17 +7,23 @@ import time
 import schedule
 
 
-# ==========================================
-# IMPORT WORKFLOW FUNCTIONS
-# ==========================================
+# ==========================================================
+# CONFIGURATION
+# ==========================================================
+
+from config import (
+    TEST_MODE,
+    DATA_COLLECTION_INTERVAL,
+    CRITICAL_ALERT_INTERVAL,
+    DAILY_DIGEST_HOUR
+)
+
+
+# ==========================================================
+# DATABASE / EMAIL IMPORTS
+# ==========================================================
 
 try:
-
-    import main
-
-    from alert import (
-        process_unhandled_critical_alerts
-    )
 
     from database import (
         get_articles_today
@@ -27,26 +33,31 @@ try:
         send_email
     )
 
-    DIRECT_IMPORT_AVAILABLE = True
+    DATABASE_EMAIL_AVAILABLE = True
 
 
-except ImportError:
+except ImportError as e:
 
-    DIRECT_IMPORT_AVAILABLE = False
+    DATABASE_EMAIL_AVAILABLE = False
+
+    logging.warning(
+        f"Database/email import unavailable: {e}"
+    )
 
 
-
-
-
-# ==========================================
+# ==========================================================
 # LOGGING CONFIGURATION
-# ==========================================
+# ==========================================================
 
 logging.basicConfig(
 
     level=logging.INFO,
 
-    format="%(asctime)s - [%(levelname)s] - %(message)s",
+    format=(
+        "%(asctime)s - "
+        "[%(levelname)s] - "
+        "%(message)s"
+    ),
 
     handlers=[
         logging.StreamHandler(sys.stdout)
@@ -55,12 +66,84 @@ logging.basicConfig(
 )
 
 
+# ==========================================================
+# PROJECT DIRECTORY
+# ==========================================================
+
+BASE_DIR = os.path.dirname(
+    os.path.abspath(__file__)
+)
 
 
+# ==========================================================
+# RUN PYTHON SCRIPT
+# ==========================================================
 
-# ==========================================
-# FEED INGESTION
-# ==========================================
+def run_script(
+    script_name
+):
+
+    script_path = os.path.join(
+        BASE_DIR,
+        script_name
+    )
+
+
+    if not os.path.exists(
+        script_path
+    ):
+
+        logging.error(
+            f"Script not found: {script_path}"
+        )
+
+        return False
+
+
+    try:
+
+        subprocess.run(
+
+            [
+                sys.executable,
+                script_path
+            ],
+
+            check=True
+
+        )
+
+        return True
+
+
+    except subprocess.CalledProcessError as e:
+
+        logging.error(
+
+            f"{script_name} failed "
+            f"with exit code {e.returncode}."
+
+        )
+
+        return False
+
+
+    except Exception as e:
+
+        logging.error(
+
+            f"Failed to run {script_name}: {e}",
+
+            exc_info=True
+
+        )
+
+        return False
+
+
+# ==========================================================
+# DATA COLLECTION
+# ==========================================================
 
 def run_ingestion():
 
@@ -69,143 +152,154 @@ def run_ingestion():
     )
 
 
-    try:
+    success = run_script(
+        "main.py"
+    )
 
 
-        if DIRECT_IMPORT_AVAILABLE and hasattr(
-            main,
-            "run_pipeline"
-        ):
+    if success:
 
+        logging.info(
+            "Feed Ingestion completed."
+        )
 
-            main.run_pipeline()
-
-
-            logging.info(
-                "Feed Ingestion completed."
-            )
-
-
-
-        else:
-
-
-            script_path = os.path.join(
-
-                os.path.dirname(__file__),
-
-                "main.py"
-
-            )
-
-
-            subprocess.run(
-
-                [
-                    sys.executable,
-                    script_path
-                ],
-
-                check=True
-
-            )
-
-
-            logging.info(
-                "Feed Ingestion completed via main.py."
-            )
-
-
-
-    except Exception as e:
-
+    else:
 
         logging.error(
-
-            f"Feed Ingestion failed: {e}",
-
-            exc_info=True
-
+            "Feed Ingestion failed."
         )
 
 
+# ==========================================================
+# CRITICAL ALERT CHECK
+# ==========================================================
+
+def run_alert_check():
+
+    logging.info(
+        "Starting Critical Alert Check..."
+    )
 
 
+    # IMPORTANT:
+    #
+    # alert_check.py is responsible for:
+    #
+    # 1. Fetching RSS articles
+    # 2. Applying 24-hour filtering
+    # 3. Checking Critical severity
+    # 4. Saving new Critical articles
+    # 5. Sending Critical emails
+    # 6. Marking alerts as sent
+    #
+    # scheduler.py only starts the process.
 
 
+    success = run_script(
+        "alert_check.py"
+    )
 
-# ==========================================
-# DAILY DIGEST EMAIL
-# ==========================================
+
+    if success:
+
+        logging.info(
+            "Critical Alert Check completed."
+        )
+
+    else:
+
+        logging.error(
+            "Critical Alert Check failed."
+        )
+
+
+# ==========================================================
+# DAILY DIGEST
+# ==========================================================
 
 def run_digest():
-
 
     logging.info(
         "Starting Daily Digest..."
     )
 
 
+    if not DATABASE_EMAIL_AVAILABLE:
+
+        logging.error(
+            "Database/email modules are unavailable."
+        )
+
+        return
+
+
     try:
 
+        # ==================================================
+        # GET TODAY'S ARTICLES
+        # ==================================================
 
-        if DIRECT_IMPORT_AVAILABLE:
-
-
-            articles = [
-
-                dict(row)
-
-                for row in get_articles_today()
-
-            ]
+        rows = get_articles_today()
 
 
+        articles = [
 
-            if articles:
+            dict(row)
 
+            for row in rows
 
-                send_email(
-
-                    articles,
-
-                    alert_type="daily"
-
-                )
+        ]
 
 
-                logging.info(
-
-                    f"Daily Digest sent: {len(articles)} articles"
-
-                )
-
+        logging.info(
+            f"Articles available for digest: "
+            f"{len(articles)}"
+        )
 
 
-            else:
+        # ==================================================
+        # NO ARTICLES
+        # ==================================================
+
+        if not articles:
+
+            logging.info(
+                "No articles available for Daily Digest."
+            )
+
+            return
 
 
-                logging.info(
+        # ==================================================
+        # SEND DAILY DIGEST
+        # ==================================================
 
-                    "No articles available."
+        success = send_email(
 
-                )
+            articles,
+
+            alert_type="daily"
+
+        )
 
 
+        if success:
 
-        else:
+            logging.info(
 
-
-            logging.warning(
-
-                "Direct import unavailable."
+                "Daily Digest sent successfully: "
+                f"{len(articles)} articles"
 
             )
 
+        else:
+
+            logging.warning(
+                "Daily Digest was not sent."
+            )
 
 
     except Exception as e:
-
 
         logging.error(
 
@@ -216,191 +310,266 @@ def run_digest():
         )
 
 
+# ==========================================================
+# CLEAR PREVIOUS SCHEDULES
+# ==========================================================
+
+schedule.clear()
 
 
+# ==========================================================
+# TEST MODE
+# ==========================================================
 
-
-
-# ==========================================
-# CRITICAL ALERT CHECK
-# ==========================================
-
-def run_alert_check():
-
+if TEST_MODE:
 
     logging.info(
-
-        "Starting Critical Alert Check..."
-
+        "Scheduler configured for TEST MODE."
     )
 
 
-    try:
+    # ------------------------------------------------------
+    # DATA COLLECTION
+    # Every 1 minute
+    # ------------------------------------------------------
+
+    schedule.every(
+        DATA_COLLECTION_INTERVAL
+    ).seconds.do(
+        run_ingestion
+    )
 
 
-        if DIRECT_IMPORT_AVAILABLE:
+    # ------------------------------------------------------
+    # CRITICAL ALERT
+    # Every 2 minutes
+    # ------------------------------------------------------
+
+    schedule.every(
+        CRITICAL_ALERT_INTERVAL
+    ).seconds.do(
+        run_alert_check
+    )
 
 
-            process_unhandled_critical_alerts()
+    # ------------------------------------------------------
+    # DAILY DIGEST
+    #
+    # Every 3 minutes for supervisor demonstration.
+    #
+    # This is ONLY temporary testing.
+    # ------------------------------------------------------
+
+    schedule.every(
+        180
+    ).seconds.do(
+        run_digest
+    )
 
 
-            logging.info(
+# ==========================================================
+# PRODUCTION MODE
+# ==========================================================
 
-                "Critical Alert Check completed."
+else:
 
-            )
-
-
-
-        else:
-
-
-            script_path = os.path.join(
-
-                os.path.dirname(__file__),
-
-                "alert_check.py"
-
-            )
+    logging.info(
+        "Scheduler configured for PRODUCTION MODE."
+    )
 
 
-            subprocess.run(
+    # ------------------------------------------------------
+    # DATA COLLECTION
+    # Every 10 minutes
+    # ------------------------------------------------------
 
-                [
-                    sys.executable,
-                    script_path
-                ],
-
-                check=True
-
-            )
-
-
-            logging.info(
-
-                "Alert check completed."
-
-            )
+    schedule.every(
+        DATA_COLLECTION_INTERVAL
+    ).seconds.do(
+        run_ingestion
+    )
 
 
+    # ------------------------------------------------------
+    # CRITICAL ALERT
+    # Every 1 hour
+    # ------------------------------------------------------
 
-    except Exception as e:
+    schedule.every(
+        CRITICAL_ALERT_INTERVAL
+    ).seconds.do(
+        run_alert_check
+    )
 
 
-        logging.error(
+    # ------------------------------------------------------
+    # DAILY DIGEST
+    # Every day at 7:00 AM
+    # ------------------------------------------------------
 
-            f"Critical Alert failed: {e}",
+    if DAILY_DIGEST_HOUR is not None:
 
-            exc_info=True
+        schedule.every().day.at(
 
+            f"{DAILY_DIGEST_HOUR:02d}:00"
+
+        ).do(
+            run_digest
         )
 
 
+# ==========================================================
+# DISPLAY CONFIGURATION
+# ==========================================================
 
+def display_configuration():
 
-
-
-
-# ==========================================
-# DEMO SCHEDULE CONFIGURATION
-# ==========================================
-
-# For supervisor demonstration only
-
-# Feed collection every 2 minute
-
-schedule.every(2).minutes.do(
-    run_ingestion
-)
-
-
-
-# Critical alert checking every 2 minute
-
-schedule.every(2).minutes.do(
-    run_alert_check
-)
-
-
-
-# Daily digest every 10 minutes for demo
-
-schedule.every(10).minutes.do(
-    run_digest
-)
-
-
-
-
-
-
-
-# ==========================================
-# START SCHEDULER
-# ==========================================
-
-if __name__ == "__main__":
-
-
-    logging.info(
-        "=========================================="
-    )
-
-    logging.info(
-        " Security Digest Scheduler DEMO Mode"
-    )
-
-    logging.info(
-        "=========================================="
+    print()
+    print(
+        "=" * 60
     )
 
 
-    logging.info(
-        "Feed Ingestion : Every 2 minutes"
+    if TEST_MODE:
+
+        print(
+            " SECURITY DIGEST SCHEDULER - TEST MODE"
+        )
+
+    else:
+
+        print(
+            " SECURITY DIGEST SCHEDULER - PRODUCTION MODE"
+        )
+
+
+    print(
+        "=" * 60
     )
 
 
-    logging.info(
-        "Critical Alert : Every 2 minutes"
+    if TEST_MODE:
+
+        print(
+            "Data Collection : "
+            f"Every {DATA_COLLECTION_INTERVAL} seconds"
+        )
+
+
+        print(
+            "Critical Alert  : "
+            f"Every {CRITICAL_ALERT_INTERVAL} seconds"
+        )
+
+
+        print(
+            "Daily Digest    : "
+            "Every 3 minutes"
+        )
+
+
+    else:
+
+        print(
+            "Data Collection : "
+            "Every 10 minutes"
+        )
+
+
+        print(
+            "Critical Alert  : "
+            "Every 1 hour"
+        )
+
+
+        print(
+            "Daily Digest    : "
+            "Every day at 07:00"
+        )
+
+
+    print(
+        "=" * 60
     )
 
 
-    logging.info(
-        "Daily Digest   : Every 10 minutes"
-    )
-
-
-    logging.info(
+    print(
         "Press CTRL+C to stop."
     )
 
 
+    print(
+        "=" * 60
+    )
 
 
-    # Run immediately when started
+# ==========================================================
+# MAIN SCHEDULER
+# ==========================================================
+
+if __name__ == "__main__":
+
+    display_configuration()
+
+
+    # ======================================================
+    # INITIAL DATA COLLECTION
+    # ======================================================
+
+    logging.info(
+        "Running initial data collection..."
+    )
+
 
     run_ingestion()
+
+
+    # ======================================================
+    # INITIAL CRITICAL CHECK
+    # ======================================================
+
+    logging.info(
+        "Running initial Critical Alert Check..."
+    )
+
 
     run_alert_check()
 
 
+    # ======================================================
+    # DO NOT RUN DAILY DIGEST IMMEDIATELY
+    # ======================================================
+    #
+    # The Daily Digest waits for its scheduled time.
+    #
+    # In TEST MODE:
+    #       every 3 minutes
+    #
+    # In PRODUCTION:
+    #       07:00 AM
+    #
+    # This prevents an unnecessary duplicate digest
+    # when scheduler.py starts.
+    #
+
+
+    # ======================================================
+    # SCHEDULER LOOP
+    # ======================================================
 
     try:
 
-
         while True:
-
 
             schedule.run_pending()
 
-
-            time.sleep(10)
-
+            time.sleep(5)
 
 
     except KeyboardInterrupt:
 
-
         logging.info(
-            "Scheduler stopped."
+            "Scheduler stopped by user."
         )
+
+        schedule.clear()

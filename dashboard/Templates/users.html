@@ -11,14 +11,21 @@ User Management
 
 
 
+<div class="container-fluid mt-4 mb-5">
+
+
+
+<!-- Page Header -->
+
 <div class="d-flex justify-content-between align-items-center mb-4">
 
 
-    <h2 class="h4 m-0">
+    <h1 class="fw-bold fs-3 m-0">
 
         👥 User Management
 
-    </h2>
+    </h1>
+
 
 
 
@@ -26,22 +33,28 @@ User Management
 
 
         <a href="{{ url_for('create_user') }}"
-           class="btn btn-primary btn-sm">
+           class="btn btn-primary px-3">
+
 
             + Create User
 
+
         </a>
+
 
 
 
         <a href="{{ url_for('home') }}"
-           class="btn btn-outline-secondary btn-sm">
+           class="btn btn-outline-secondary px-3">
+
 
             Back Dashboard
+
 
         </a>
 
 
+
     </div>
 
 
@@ -52,468 +65,981 @@ User Management
 
 
 
-<div class="card shadow-sm">
 
+<!-- User Table -->
 
-    <div class="card-body">
 
+<div class="card shadow-sm border-0">
 
 
-        <div class="table-responsive">
+<div class="card-body">
 
 
 
-            <table class="table table-hover table-bordered align-middle">
+<div class="table-responsive">
 
 
 
-                <thead class="table-dark">
+<table class="table table-hover align-middle user-table">
 
 
-                    <tr>
 
+<thead class="table-dark">
 
-                        <th>ID</th>
 
-                        <th>Email</th>
+<tr>
 
-                        <th>Password Hash</th>
 
-                        <th>Daily Digest</th>
+<th>ID</th>
 
-                        <th>Critical Alerts</th>
 
-                        <th>Created At</th>
+<th>Email</th>
 
-                        <th>Last Login</th>
 
-                        <th>Login Count</th>
+<th>Password Hash</th>
 
-                        <th>Status</th>
 
-                        <th>Role</th>
+<th class="text-center">
+Daily Digest
+</th>
 
-                        <th>Action</th>
 
+<th class="text-center">
+Critical Alerts
+</th>
 
-                    </tr>
 
+<th>
+Created At
+</th>
 
-                </thead>
 
+<th>
+Last Login
+</th>
 
 
+<th>
+Login Count
+</th>
 
 
-                <tbody>
+<th class="text-center">
+Status
+</th>
 
 
+<th class="text-center">
+Role
+</th>
 
-                {% if users %}
 
+<th class="text-center">
+Action
+</th>
 
 
-                    {% for user in users %}
+</tr>
 
 
+</thead>
 
-                    <tr>
 
 
 
-                        <!-- ID -->
 
-                        <td>
 
-                            {{ user.id }}
 
-                        </td>
+<tbody>
 
 
+{% if users %}
 
 
 
 
-                        <!-- Email -->
+{% for user in users %}
 
-                        <td>
 
-                            {{ user.email }}
 
-                        </td>
 
+<tr>
 
 
 
+<!-- ID -->
 
+<td>
 
-                        <!-- Password Hash -->
+{{ user.id }}
 
-                        <td style="max-width:250px;">
+</td>
 
 
-                            <small>
 
-                            {{ user.password_hash }}
 
-                            </small>
 
+<!-- Email -->
 
-                        </td>
+<td class="email-cell">
 
+{{ user.email }}
 
+</td>
 
 
 
 
 
-                        <!-- Daily Digest -->
 
-                        <td>
+<!-- Password Hash -->
 
 
-                            {% if user.receive_daily_digest == 1 %}
+<td>
 
 
-                                <span class="badge bg-success">
+<div class="password-box">
 
-                                    Enabled
 
-                                </span>
 
+<span id="pass{{user.id}}"
+      class="hidden-password">
 
-                            {% else %}
 
+************
 
-                                <span class="badge bg-secondary">
 
-                                    Disabled
+</span>
 
-                                </span>
 
 
-                            {% endif %}
 
 
-                        </td>
+<button type="button"
 
+        class="btn btn-light btn-sm eye-btn"
 
+        onclick="showPassword('{{user.id}}','{{user.password_hash}}')"
 
+        data-bs-toggle="tooltip"
 
+        title="Show Password Hash">
 
 
+👁
 
-                        <!-- Critical Alert -->
 
+</button>
 
-                        <td>
-
-
-                            {% if user.receive_critical_alerts == 1 %}
-
-
-                                <span class="badge bg-success">
-
-                                    Enabled
-
-                                </span>
-
-
-                            {% else %}
-
-
-                                <span class="badge bg-secondary">
-
-                                    Disabled
-
-                                </span>
-
-
-                            {% endif %}
-
-
-                        </td>
-
-
-
-
-
-
-
-                        <!-- Created Date -->
-
-
-                        <td>
-
-
-                            {{ user.created_at }}
-
-
-                        </td>
-
-
-
-
-
-
-
-                        <!-- Last Login -->
-
-
-                        <td>
-
-
-                            {% if user.last_login %}
-
-
-                                {{ user.last_login }}
-
-
-                            {% else %}
-
-
-                                Never
-
-
-                            {% endif %}
-
-
-                        </td>
-
-
-
-
-
-
-
-                        <!-- Login Count -->
-
-
-                        <td>
-
-
-                            {{ user.login_count }}
-
-
-                        </td>
-
-
-
-
-
-
-
-                        <!-- Account Status -->
-
-
-                        <td>
-
-
-                            {% if user.account_status == "Active" %}
-
-
-                                <span class="badge bg-success">
-
-                                    Active
-
-                                </span>
-
-
-                            {% else %}
-
-
-                                <span class="badge bg-danger">
-
-                                    Disabled
-
-                                </span>
-
-
-                            {% endif %}
-
-
-                        </td>
-
-
-
-
-
-
-
-
-                        <!-- Role -->
-
-
-                        <td>
-
-
-                            {% if user.role == "Admin" %}
-
-
-                                <span class="badge bg-warning text-dark">
-
-                                    Admin
-
-                                </span>
-
-
-                            {% else %}
-
-
-                                <span class="badge bg-primary">
-
-                                    User
-
-                                </span>
-
-
-                            {% endif %}
-
-
-                        </td>
-
-
-
-
-
-
-
-                        <!-- Action -->
-
-
-                        <td style="min-width:180px;">
-
-
-
-                            {% if user.account_status == "Active" %}
-
-
-
-                            <a href="{{ url_for('disable_user', user_id=user.id) }}"
-
-                               class="btn btn-warning btn-sm mb-1"
-
-                               onclick="return confirm('Disable this account?');">
-
-
-                                Disable
-
-
-                            </a>
-
-
-
-                            {% else %}
-
-
-
-
-                            <a href="{{ url_for('enable_user', user_id=user.id) }}"
-
-                               class="btn btn-success btn-sm mb-1">
-
-
-                                Enable
-
-
-                            </a>
-
-
-
-                            {% endif %}
-
-
-
-
-
-
-                            {% if user.role != "Admin" %}
-
-
-
-                            <a href="{{ url_for('delete_user', user_id=user.id) }}"
-
-                               class="btn btn-danger btn-sm mb-1"
-
-                               onclick="return confirm('Delete this account permanently?');">
-
-
-                                Delete
-
-
-                            </a>
-
-
-
-                            {% endif %}
-
-
-
-
-                        </td>
-
-
-
-
-
-                    </tr>
-
-
-
-
-
-                    {% endfor %}
-
-
-
-
-
-                {% else %}
-
-
-
-
-                    <tr>
-
-
-                        <td colspan="11"
-
-                            class="text-center text-muted py-4">
-
-
-                            No users found.
-
-
-                        </td>
-
-
-                    </tr>
-
-
-
-
-                {% endif %}
-
-
-
-
-
-                </tbody>
-
-
-
-            </table>
-
-
-
-        </div>
-
-
-
-    </div>
 
 
 </div>
+
+
+</td>
+
+
+
+
+
+
+
+
+<!-- Daily Digest -->
+
+
+<td class="text-center">
+
+
+
+{% if user.receive_daily_digest == 1 %}
+
+
+
+<span class="badge badge-success">
+
+
+✉ Enabled
+
+
+</span>
+
+
+
+{% else %}
+
+
+
+<span class="badge badge-secondary">
+
+
+✉ Disabled
+
+
+</span>
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Critical Alerts -->
+
+
+<td class="text-center">
+
+
+
+{% if user.receive_critical_alerts == 1 %}
+
+
+
+<span class="badge badge-success">
+
+
+🔔 Enabled
+
+
+</span>
+
+
+
+{% else %}
+
+
+
+<span class="badge badge-secondary">
+
+
+🔔 Disabled
+
+
+</span>
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Created Date -->
+
+
+<td>
+
+
+{{ user.created_at[:10] }}
+
+<br>
+
+<small>
+
+{{ user.created_at[11:16] }}
+
+</small>
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Last Login -->
+
+
+<td>
+
+
+{% if user.last_login %}
+
+
+
+{{ user.last_login[:10] }}
+
+<br>
+
+<small>
+
+{{ user.last_login[11:16] }}
+
+</small>
+
+
+
+
+{% else %}
+
+
+Never
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Login Count -->
+
+
+<td class="text-center">
+
+
+{{ user.login_count }}
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Status -->
+
+
+<td class="text-center">
+
+
+
+{% if user.account_status == "Active" %}
+
+
+
+<span class="badge badge-success">
+
+
+✔ Active
+
+
+</span>
+
+
+
+
+{% else %}
+
+
+
+<span class="badge badge-danger">
+
+
+✖ Disabled
+
+
+</span>
+
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Role -->
+
+
+<td class="text-center">
+
+
+
+{% if user.role == "Admin" %}
+
+
+
+
+<span class="badge badge-admin">
+
+
+Admin
+
+
+</span>
+
+
+
+
+
+{% else %}
+
+
+
+
+
+<span class="badge badge-user">
+
+
+User
+
+
+</span>
+
+
+
+
+
+{% endif %}
+
+
+
+</td>
+
+
+
+
+
+
+
+
+
+<!-- Action -->
+
+
+<td class="text-center action-column">
+
+
+
+
+
+
+{% if user.account_status == "Active" %}
+
+
+
+
+<a href="{{ url_for('disable_user', user_id=user.id) }}"
+
+   class="btn btn-warning action-btn"
+
+   data-bs-toggle="tooltip"
+
+   title="Disable User"
+
+   onclick="return confirm('Disable this account?');">
+
+
+
+🚫
+
+
+
+</a>
+
+
+
+
+
+{% else %}
+
+
+
+
+<a href="{{ url_for('enable_user', user_id=user.id) }}"
+
+   class="btn btn-success action-btn"
+
+   data-bs-toggle="tooltip"
+
+   title="Enable User">
+
+
+
+▶
+
+
+
+</a>
+
+
+
+
+
+{% endif %}
+
+
+
+
+
+
+
+
+{% if user.role != "Admin" %}
+
+
+
+
+<a href="{{ url_for('delete_user', user_id=user.id) }}"
+
+   class="btn btn-danger action-btn"
+
+   data-bs-toggle="tooltip"
+
+   title="Delete User"
+
+   onclick="return confirm('Delete this account permanently?');">
+
+
+
+🗑
+
+
+
+</a>
+
+
+
+
+
+{% endif %}
+
+
+
+
+
+
+</td>
+
+
+
+
+
+
+</tr>
+
+
+
+
+{% endfor %}
+
+
+
+
+{% else %}
+
+
+
+<tr>
+
+<td colspan="11"
+    class="text-center text-muted py-4">
+
+
+No users found.
+
+
+</td>
+
+</tr>
+
+
+
+{% endif %}
+
+
+
+
+</tbody>
+
+
+
+</table>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+</div>
+
+
+
+
+
+
+<p class="text-muted mt-3">
+
+
+Total Users: {{ users|length }}
+
+
+</p>
+
+
+
+
+</div>
+
+
+
+
+
+
+
+
+
+<style>
+
+
+
+.user-table {
+
+
+font-size:14px;
+
+
+}
+
+
+
+
+
+.user-table th {
+
+
+font-size:13px;
+
+text-transform:uppercase;
+
+white-space:nowrap;
+
+
+}
+
+
+
+
+.user-table td {
+
+
+padding:14px 12px;
+
+
+}
+
+
+
+
+.email-cell {
+
+
+font-weight:600;
+
+
+}
+
+
+
+
+
+
+.password-box {
+
+
+display:flex;
+
+align-items:center;
+
+gap:8px;
+
+max-width:300px;
+
+
+}
+
+
+
+
+
+.hidden-password {
+
+
+display:inline-block;
+
+max-width:220px;
+
+word-break:break-all;
+
+letter-spacing:2px;
+
+font-size:12px;
+
+
+}
+
+
+
+
+
+.eye-btn {
+
+
+width:38px;
+
+height:34px;
+
+padding:0;
+
+
+}
+
+
+
+
+
+
+
+.badge {
+
+
+display:inline-block;
+
+min-width:90px;
+
+padding:7px 10px;
+
+font-size:12px;
+
+border-radius:8px;
+
+
+}
+
+
+
+
+.badge-success {
+
+
+background:#198754;
+
+color:white;
+
+
+}
+
+
+
+
+
+.badge-secondary {
+
+
+background:#6c757d;
+
+color:white;
+
+
+}
+
+
+
+
+
+.badge-danger {
+
+
+background:#dc3545;
+
+color:white;
+
+
+}
+
+
+
+
+
+.badge-admin {
+
+
+background:#ffc107;
+
+color:#222;
+
+
+}
+
+
+
+
+
+.badge-user {
+
+
+background:#0d6efd;
+
+color:white;
+
+
+}
+
+
+
+
+
+
+.action-btn {
+
+
+width:45px;
+
+height:38px;
+
+font-size:16px;
+
+margin:2px;
+
+
+}
+
+
+
+
+.action-column {
+
+
+white-space:nowrap;
+
+
+}
+
+
+
+</style>
+
+
+
+
+
+
+
+
+
+
+<script>
+
+
+function showPassword(id,password){
+
+
+    let element =
+    document.getElementById(
+        "pass" + id
+    );
+
+
+
+    if(element.innerHTML.includes("*")){
+
+
+        element.innerHTML = password;
+
+
+    }
+
+
+    else{
+
+
+        element.innerHTML =
+        "************";
+
+
+    }
+
+
+}
+
+
+
+
+
+
+
+document.addEventListener(
+"DOMContentLoaded",
+function(){
+
+
+    const tooltipTriggerList =
+    document.querySelectorAll(
+        '[data-bs-toggle="tooltip"]'
+    );
+
+
+
+    tooltipTriggerList.forEach(
+    function(element){
+
+
+        new bootstrap.Tooltip(element);
+
+
+
+    });
+
+
+
+});
+
+
+
+</script>
+
+
 
 
 

@@ -1,227 +1,675 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Statistics</title>
+{% extends "base.html" %}
 
-    <!-- Bootstrap 5 CSS -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block title %}
+Dashboard Statistics - Security Digest
+{% endblock %}
 
-    <style>
-        body {
-            background: #f5f5f5;
-        }
 
-        .stat-card {
-            border-radius: 15px;
-            padding: 20px;
-            color: white;
-            text-align: center;
-            margin-bottom: 20px;
-        }
+{% block content %}
 
-        .total-card {
-            background: #212529;
-        }
 
-        .Critical-card {
-            background: #dc3545;
-        }
+<style>
 
-        .High-card {
-            background: #fd7e14;
-        }
+body {
+    background: #f5f5f5;
+}
 
-        .Medium-card {
-            background: #ffc107;
-            color: black;
-        }
 
-        .Low-card {
-            background: #198754;
-        }
+.stat-card {
 
-        .category-card, .chart-card {
-            background: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        }
+    border-radius: 15px;
+    padding: 20px;
+    color: white;
+    text-align: center;
+    margin-bottom: 20px;
 
-        .chart-container {
-            position: relative;
-            height: 300px;
-            width: 100%;
-        }
-    </style>
-</head>
+}
 
-<body class="container mt-4 mb-5">
 
-    <!-- Navigation -->
-    <nav class="mb-4">
-        <a href="/" class="btn btn-dark">Home</a>
-        <a href="/stats" class="btn btn-primary">Stats</a>
-        <a href="/about" class="btn btn-secondary">About</a>
-    </nav>
+.total-card {
 
-    <h1 class="mb-4">📊 Dashboard Statistics</h1>
+    background: #212529;
+
+}
+
+
+.Critical-card {
+
+    background: #dc3545;
+
+}
+
+
+.High-card {
+
+    background: #fd7e14;
+
+}
+
+
+.Medium-card {
+
+    background: #ffc107;
+    color: black;
+
+}
+
+
+.Low-card {
+
+    background: #198754;
+
+}
+
+
+
+.category-card,
+.chart-card {
+
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+
+}
+
+
+
+.chart-container {
+
+    position: relative;
+    height: 300px;
+    width: 100%;
+
+}
+
+
+</style>
+
+
+
+
+<div class="container mt-4 mb-5">
+
+
+    <h1 class="mb-4">
+        📊 Dashboard Statistics
+    </h1>
+
+
+
 
     <!-- Total Articles Card -->
+
     <div class="stat-card total-card">
-        <h2>{{ total }}</h2>
-        <p class="m-0">Total Articles Logged</p>
+
+
+        <h2>
+            {{ total }}
+        </h2>
+
+
+        <p class="m-0">
+            Total Articles Logged
+        </p>
+
+
     </div>
 
-    <!-- Severity Cards Summary -->
-    <h3>🚨 Articles by Severity</h3>
+
+
+
+
+    <!-- Severity Cards -->
+
+
+    <h3>
+        🚨 Articles by Severity
+    </h3>
+
+
+
     <div class="row">
+
+
         {% for item in severity_items %}
+
+
         <div class="col-md-3">
+
+
             <div class="stat-card {{ item.severity }}-card">
-                <h2>{{ item.count }}</h2>
-                <p class="m-0">{{ item.severity }}</p>
+
+
+                <h2>
+                    {{ item.count }}
+                </h2>
+
+
+                <p class="m-0">
+                    {{ item.severity }}
+                </p>
+
+
             </div>
+
+
         </div>
+
+
         {% endfor %}
+
+
+
     </div>
 
-    <!-- Week 18: Dynamic Charts Section -->
-    <h3 class="mt-4 mb-3">📈 Visual Analytics & Trends</h3>
+
+
+
+
+
+
+    <!-- Visual Analytics -->
+
+
+    <h3 class="mt-4 mb-3">
+        📈 Visual Analytics & Trends
+    </h3>
+
+
+
 
     <div class="row">
-        <!-- 1. Bar Chart: Severity Breakdown -->
+
+
+
         <div class="col-md-6">
+
+
             <div class="chart-card">
-                <h5 class="card-title text-center mb-3">Severity Distribution</h5>
+
+
+                <h5 class="card-title text-center mb-3">
+
+                    Severity Distribution
+
+                </h5>
+
+
                 <div class="chart-container">
+
+
                     <canvas id="severityChart"></canvas>
+
+
                 </div>
+
+
             </div>
+
+
         </div>
 
-        <!-- 2. Pie Chart: Category Distribution -->
+
+
+
+
+
+
         <div class="col-md-6">
+
+
             <div class="chart-card">
-                <h5 class="card-title text-center mb-3">Category Breakdown</h5>
+
+
+                <h5 class="card-title text-center mb-3">
+
+                    Category Breakdown
+
+                </h5>
+
+
                 <div class="chart-container">
+
+
                     <canvas id="categoryChart"></canvas>
+
+
                 </div>
+
+
             </div>
+
+
         </div>
+
+
+
     </div>
 
-    <!-- 3. Line Chart: 30-Day Activity Trend -->
+
+
+
+
+
+    <!-- Daily Chart -->
+
+
     <div class="row">
+
+
         <div class="col-12">
+
+
             <div class="chart-card">
-                <h5 class="card-title text-center mb-3">Article Ingestion Volume (Last 30 Days)</h5>
+
+
+                <h5 class="card-title text-center mb-3">
+
+                    Article Ingestion Volume (Last 30 Days)
+
+                </h5>
+
+
                 <div class="chart-container">
+
+
                     <canvas id="dailyChart"></canvas>
+
+
                 </div>
+
+
             </div>
+
+
         </div>
+
+
     </div>
 
-    <!-- Category Summary Cards -->
-    <h3 class="mt-4">📂 Articles by Category</h3>
+
+
+
+
+
+
+    <!-- Category Cards -->
+
+
+    <h3 class="mt-4">
+
+        📂 Articles by Category
+
+    </h3>
+
+
+
+
     <div class="row">
+
+
         {% for item in category_items %}
+
+
         <div class="col-md-4">
+
+
             <div class="category-card text-center">
-                <h4>{{ item.category if item.category else 'Uncategorized' }}</h4>
-                <h2>{{ item.count }}</h2>
-                <p class="text-muted m-0">Articles</p>
+
+
+                <h4>
+
+                    {{ item.category if item.category else 'Uncategorized' }}
+
+                </h4>
+
+
+                <h2>
+
+                    {{ item.count }}
+
+                </h2>
+
+
+                <p class="text-muted m-0">
+
+                    Articles
+
+                </p>
+
+
             </div>
+
+
         </div>
+
+
         {% endfor %}
+
+
+
     </div>
 
-    <!-- JavaScript to Render Chart.js -->
-    <script>
-        const severityData = JSON.parse('{{ severity_json | safe }}');
-        const categoryLabels = JSON.parse('{{ category_labels_json | safe }}');
-        const categoryCounts = JSON.parse('{{ category_counts_json | safe }}');
-        const dailyLabels = JSON.parse('{{ daily_labels_json | safe }}');
-        const dailyCounts = JSON.parse('{{ daily_counts_json | safe }}');
 
-        // --------------------------------------------------
-        // 1. Severity Bar Chart
-        // --------------------------------------------------
-        new Chart(document.getElementById('severityChart'), {
-            type: 'bar',
-            data: {
-                labels: Object.keys(severityData),
-                datasets: [{
-                    label: 'Article Count',
-                    data: Object.values(severityData),
-                    backgroundColor: [
-                        '#dc3545', // Critical - Red
-                        '#fd7e14', // High - Orange
-                        '#ffc107', // Medium - Yellow
-                        '#198754'  // Low - Green
-                    ],
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true, ticks: { precision: 0 } } }
+
+</div>
+
+
+
+
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+
+
+<script>
+
+
+const severityData = JSON.parse('{{ severity_json | safe }}');
+
+
+const categoryLabels = JSON.parse('{{ category_labels_json | safe }}');
+
+
+const categoryCounts = JSON.parse('{{ category_counts_json | safe }}');
+
+
+const dailyLabels = JSON.parse('{{ daily_labels_json | safe }}');
+
+
+const dailyCounts = JSON.parse('{{ daily_counts_json | safe }}');
+
+
+
+
+
+
+// Severity Chart
+
+new Chart(document.getElementById('severityChart'), {
+
+
+    type: 'bar',
+
+
+    data: {
+
+
+        labels: Object.keys(severityData),
+
+
+        datasets: [{
+
+
+            label: 'Article Count',
+
+
+            data: Object.values(severityData),
+
+
+            backgroundColor: [
+
+                '#dc3545',
+                '#fd7e14',
+                '#ffc107',
+                '#198754'
+
+            ],
+
+
+            borderWidth: 1
+
+
+        }]
+
+
+    },
+
+
+    options: {
+
+
+        responsive: true,
+
+
+        maintainAspectRatio: false,
+
+
+        plugins: {
+
+
+            legend: {
+
+
+                display: false
+
+
             }
-        });
 
-        // --------------------------------------------------
-        // 2. Category Pie Chart
-        // --------------------------------------------------
-        new Chart(document.getElementById('categoryChart'), {
-            type: 'pie',
-            data: {
-                labels: categoryLabels,
-                datasets: [{
-                    data: categoryCounts,
-                    backgroundColor: ['#0d6efd', '#20c997', '#6f42c1', '#fd7e14', '#17a2b8']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
 
-        // --------------------------------------------------
-        // 3. 30-Day Activity Line Chart
-        // --------------------------------------------------
-        new Chart(document.getElementById('dailyChart'), {
-            type: 'line',
-            data: {
-                labels: dailyLabels,
-                datasets: [{
-                    label: 'Articles Received',
-                    data: dailyCounts,
-                    borderColor: '#0d6efd',
-                    backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                    fill: true,
-                    tension: 0.3,
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                scales: {
-                    x: { title: { display: true, text: 'Date' } },
-                    y: { beginAtZero: true, ticks: { precision: 0 } }
+        },
+
+
+        scales: {
+
+
+            y: {
+
+
+                beginAtZero: true,
+
+
+                ticks: {
+
+
+                    precision: 0
+
+
                 }
+
+
             }
-        });
-    </script>
-</body>
-</html>
+
+
+        }
+
+
+    }
+
+
+
+});
+
+
+
+
+
+
+
+// Category Chart
+
+
+new Chart(document.getElementById('categoryChart'), {
+
+
+    type: 'pie',
+
+
+    data: {
+
+
+        labels: categoryLabels,
+
+
+        datasets: [{
+
+
+            data: categoryCounts,
+
+
+            backgroundColor: [
+
+
+                '#0d6efd',
+                '#20c997',
+                '#6f42c1',
+                '#fd7e14',
+                '#17a2b8'
+
+
+            ]
+
+
+        }]
+
+
+    },
+
+
+    options: {
+
+
+        responsive: true,
+
+
+        maintainAspectRatio: false,
+
+
+        plugins: {
+
+
+            legend: {
+
+
+                position: 'bottom'
+
+
+            }
+
+
+        }
+
+
+    }
+
+
+
+});
+
+
+
+
+
+
+
+// Daily Chart
+
+
+new Chart(document.getElementById('dailyChart'), {
+
+
+    type: 'line',
+
+
+    data: {
+
+
+        labels: dailyLabels,
+
+
+        datasets: [{
+
+
+            label: 'Articles Received',
+
+
+            data: dailyCounts,
+
+
+            borderColor: '#0d6efd',
+
+
+            backgroundColor: 'rgba(13,110,253,0.1)',
+
+
+            fill: true,
+
+
+            tension: 0.3,
+
+
+            pointRadius: 4
+
+
+        }]
+
+
+    },
+
+
+    options: {
+
+
+        responsive: true,
+
+
+        maintainAspectRatio: false,
+
+
+        scales: {
+
+
+            x: {
+
+
+                title: {
+
+
+                    display: true,
+
+
+                    text: 'Date'
+
+
+                }
+
+
+            },
+
+
+            y: {
+
+
+                beginAtZero: true,
+
+
+                ticks: {
+
+
+                    precision: 0
+
+
+                }
+
+
+            }
+
+
+        }
+
+
+    }
+
+
+
+});
+
+
+
+</script>
+
+
+{% endblock %}
