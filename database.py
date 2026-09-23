@@ -724,8 +724,27 @@ def get_users_for_alert(alert_type="daily"):
 # ==========================================
 # INITIAL DATABASE SETUP
 # ==========================================
-if __name__ == "__main__":
+# IMPORTANT:
+# Render/Gunicorn imports this module; it does NOT run
+# database.py as "__main__". Therefore the tables must
+# also be created during module import.
+#
+# This prevents:
+#     sqlite3.OperationalError: no such table: articles
+#
+# when dashboard/app.py accesses the database after deployment.
+try:
     create_table()
+except Exception as database_startup_error:
+    # Do not hide the real database error from Render logs.
+    print(
+        "Database initialization failed:",
+        repr(database_startup_error)
+    )
+    raise
+
+
+if __name__ == "__main__":
     if USE_POSTGRES:
         print("PostgreSQL database initialized successfully.")
     else:

@@ -1016,6 +1016,174 @@ def delete_user(user_id):
 
 
 # =========================================================
+# ADMIN DASHBOARD
+# =========================================================
+
+@app.route("/admin")
+@login_required
+@admin_required
+def admin_dashboard():
+
+    user_count = db_fetch_one(
+        "SELECT COUNT(*) AS count FROM users"
+    )
+
+    article_count = db_fetch_one(
+        "SELECT COUNT(*) AS count FROM articles"
+    )
+
+    cve_count = db_fetch_one(
+        "SELECT COUNT(*) AS count FROM cve_details"
+    )
+
+    recommendation_count = db_fetch_one(
+        "SELECT COUNT(*) AS count FROM recommendations"
+    )
+
+    critical_total = db_fetch_one(
+        """
+        SELECT COUNT(*) AS count
+        FROM articles
+        WHERE severity = 'Critical'
+        """
+    )
+
+    critical_sent = db_fetch_one(
+        """
+        SELECT COUNT(*) AS count
+        FROM articles
+        WHERE severity = 'Critical'
+        AND COALESCE(alert_sent, 0) = 1
+        """
+    )
+
+    critical_unsent = db_fetch_one(
+        """
+        SELECT COUNT(*) AS count
+        FROM articles
+        WHERE severity = 'Critical'
+        AND COALESCE(alert_sent, 0) = 0
+        """
+    )
+
+    return render_template(
+        "admin.html",
+        user_count=user_count["count"] if user_count else 0,
+        article_count=article_count["count"] if article_count else 0,
+        cve_count=cve_count["count"] if cve_count else 0,
+        recommendation_count=(
+            recommendation_count["count"]
+            if recommendation_count else 0
+        ),
+        critical_total=(
+            critical_total["count"]
+            if critical_total else 0
+        ),
+        critical_sent=(
+            critical_sent["count"]
+            if critical_sent else 0
+        ),
+        critical_unsent=(
+            critical_unsent["count"]
+            if critical_unsent else 0
+        )
+    )
+
+
+# =========================================================
+# ADMIN CRITICAL ALERT STATUS
+# =========================================================
+
+@app.route("/admin/alerts")
+@login_required
+@admin_required
+def admin_alerts():
+
+    alerts = db_fetch_all(
+        """
+        SELECT
+            id,
+            title,
+            source,
+            category,
+            severity,
+            published_date,
+            alert_sent,
+            created_at
+        FROM articles
+        WHERE severity = 'Critical'
+        ORDER BY id DESC
+        """
+    )
+
+    return render_template(
+        "admin_alerts.html",
+        alerts=alerts
+    )
+
+
+# =========================================================
+# ADMIN CVE DETAILS
+# =========================================================
+
+@app.route("/admin/cves")
+@login_required
+@admin_required
+def admin_cves():
+
+    cves = db_fetch_all(
+        """
+        SELECT
+            c.id,
+            c.article_id,
+            c.cve_id,
+            c.cvss_score,
+            c.severity,
+            c.description,
+            c.affected_product,
+            c.created_at,
+            a.title AS article_title
+        FROM cve_details c
+        LEFT JOIN articles a
+            ON a.id = c.article_id
+        ORDER BY c.id DESC
+        """
+    )
+
+    return render_template(
+        "admin_cves.html",
+        cves=cves
+    )
+
+
+# =========================================================
+# ADMIN RECOMMENDATIONS
+# =========================================================
+
+@app.route("/admin/recommendations")
+@login_required
+@admin_required
+def admin_recommendations():
+
+    recommendations = db_fetch_all(
+        """
+        SELECT
+            id,
+            category,
+            severity,
+            advice
+        FROM recommendations
+        ORDER BY id DESC
+        """
+    )
+
+    return render_template(
+        "admin_recommendations.html",
+        recommendations=recommendations
+    )
+
+
+# =========================================================
 # ABOUT
 # =========================================================
 

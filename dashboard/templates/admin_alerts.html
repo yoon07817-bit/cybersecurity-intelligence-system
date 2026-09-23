@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Critical Alert Status - Security Digest</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f1f3f5;
+        }
+
+        .sent {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 5px;
+            background: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .not-sent {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 5px;
+            background: #fff3cd;
+            color: #856404;
+            font-weight: bold;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <a
+        class="back"
+        href="{{ url_for('admin_dashboard') }}"
+    >
+        ← Back to Admin Dashboard
+    </a>
+
+    <h1>
+        Critical Alert Status
+    </h1>
+
+
+    <div class="card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>ID</th>
+
+                    <th>Article</th>
+
+                    <th>Source</th>
+
+                    <th>Category</th>
+
+                    <th>Severity</th>
+
+                    <th>Published Date</th>
+
+                    <th>Alert Status</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for alert in alerts %}
+
+                <tr>
+
+                    <td>
+                        {{ alert.id }}
+                    </td>
+
+                    <td>
+                        {{ alert.title }}
+                    </td>
+
+                    <td>
+                        {{ alert.source or '' }}
+                    </td>
+
+                    <td>
+                        {{ alert.category or '' }}
+                    </td>
+
+                    <td>
+                        {{ alert.severity }}
+                    </td>
+
+                    <td>
+                        {{ alert.published_date or '' }}
+                    </td>
+
+                    <td>
+
+                        {% if alert.alert_sent %}
+
+                            <span class="sent">
+                                ✓ Sent
+                            </span>
+
+                        {% else %}
+
+                            <span class="not-sent">
+                                Not Sent
+                            </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+            {% else %}
+
+                <tr>
+
+                    <td colspan="7">
+                        No Critical articles found.
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

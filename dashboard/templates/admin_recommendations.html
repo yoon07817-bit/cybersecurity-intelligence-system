@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>Recommendations - Security Digest</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f1f3f5;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <a
+        class="back"
+        href="{{ url_for('admin_dashboard') }}"
+    >
+        ← Back to Admin Dashboard
+    </a>
+
+    <h1>
+        Protection Recommendations
+    </h1>
+
+
+    <div class="card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>ID</th>
+
+                    <th>Category</th>
+
+                    <th>Severity</th>
+
+                    <th>Advice</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for item in recommendations %}
+
+                <tr>
+
+                    <td>
+                        {{ item.id }}
+                    </td>
+
+                    <td>
+                        {{ item.category or '' }}
+                    </td>
+
+                    <td>
+                        {{ item.severity or '' }}
+                    </td>
+
+                    <td>
+                        {{ item.advice or '' }}
+                    </td>
+
+                </tr>
+
+            {% else %}
+
+                <tr>
+
+                    <td colspan="4">
+                        No recommendations found.
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

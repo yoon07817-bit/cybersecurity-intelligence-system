@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CVE Details - Security Digest</title>
+
+    <style>
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+        }
+
+        .container {
+            max-width: 1300px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+            vertical-align: top;
+        }
+
+        th {
+            background: #f1f3f5;
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+<div class="container">
+
+    <a
+        class="back"
+        href="{{ url_for('admin_dashboard') }}"
+    >
+        ← Back to Admin Dashboard
+    </a>
+
+    <h1>
+        CVE Details
+    </h1>
+
+
+    <div class="card">
+
+        <table>
+
+            <thead>
+
+                <tr>
+
+                    <th>CVE ID</th>
+
+                    <th>CVSS</th>
+
+                    <th>Severity</th>
+
+                    <th>Affected Product</th>
+
+                    <th>Description</th>
+
+                    <th>Article</th>
+
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+            {% for cve in cves %}
+
+                <tr>
+
+                    <td>
+                        {{ cve.cve_id or '' }}
+                    </td>
+
+                    <td>
+                        {{ cve.cvss_score
+                           if cve.cvss_score is not none
+                           else '' }}
+                    </td>
+
+                    <td>
+                        {{ cve.severity or '' }}
+                    </td>
+
+                    <td>
+                        {{ cve.affected_product or '' }}
+                    </td>
+
+                    <td>
+                        {{ cve.description or '' }}
+                    </td>
+
+                    <td>
+                        {{ cve.article_title or '' }}
+                    </td>
+
+                </tr>
+
+            {% else %}
+
+                <tr>
+
+                    <td colspan="6">
+                        No CVE records found.
+                    </td>
+
+                </tr>
+
+            {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

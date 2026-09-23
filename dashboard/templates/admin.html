@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Admin Dashboard - Security Digest</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 30px;
+            font-family: Arial, sans-serif;
+            background: #f4f6f9;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns:
+                repeat(auto-fit, minmax(180px, 1fr));
+            gap: 18px;
+            margin-bottom: 30px;
+        }
+
+        .stat {
+            background: white;
+            padding: 22px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .stat h2 {
+            margin: 0 0 8px;
+            font-size: 30px;
+        }
+
+        .stat p {
+            margin: 0;
+            color: #666;
+        }
+
+        .menu {
+            background: white;
+            padding: 25px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,.08);
+        }
+
+        .menu a {
+            display: block;
+            padding: 14px;
+            margin: 10px 0;
+            background: #f1f3f5;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #222;
+        }
+
+        .menu a:hover {
+            background: #e9ecef;
+        }
+
+        .back {
+            display: inline-block;
+            margin-bottom: 20px;
+            text-decoration: none;
+            color: #007bff;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <a class="back" href="{{ url_for('home') }}">
+        ← Back to Dashboard
+    </a>
+
+    <h1>Administrator Dashboard</h1>
+
+    <div class="grid">
+
+        <div class="stat">
+            <h2>{{ user_count }}</h2>
+            <p>Total Users</p>
+        </div>
+
+        <div class="stat">
+            <h2>{{ article_count }}</h2>
+            <p>Total Articles</p>
+        </div>
+
+        <div class="stat">
+            <h2>{{ cve_count }}</h2>
+            <p>CVE Details</p>
+        </div>
+
+        <div class="stat">
+            <h2>{{ recommendation_count }}</h2>
+            <p>Recommendations</p>
+        </div>
+
+        <div class="stat">
+            <h2>{{ critical_total }}</h2>
+            <p>Critical Articles</p>
+        </div>
+
+        <div class="stat">
+            <h2>{{ critical_sent }}</h2>
+            <p>Critical Alerts Sent</p>
+        </div>
+
+        <div class="stat">
+            <h2>{{ critical_unsent }}</h2>
+            <p>Critical Alerts Not Sent</p>
+        </div>
+
+    </div>
+
+
+    <div class="menu">
+
+        <h2>Administration</h2>
+
+        <a href="{{ url_for('users') }}">
+            👥 User Management
+        </a>
+
+        <a href="{{ url_for('admin_alerts') }}">
+            🚨 Critical Alert Status
+        </a>
+
+        <a href="{{ url_for('admin_cves') }}">
+            🔐 CVE Details
+        </a>
+
+        <a href="{{ url_for('admin_recommendations') }}">
+            🛡 Protection Recommendations
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+</html>
