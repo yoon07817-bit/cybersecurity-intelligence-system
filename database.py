@@ -1485,10 +1485,11 @@ def get_users_for_alert(alert_type="daily"):
 # INITIAL DATABASE SETUP
 # ==========================================
 
-if __name__ == "__main__":
+create_table()
 
-    create_table()
+
+if __name__ == "__main__":
 
     print(
         "Database initialized successfully."
-    )                
+    )
