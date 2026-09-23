@@ -1,7 +1,6 @@
 import json
 import os
 import sys
-import sqlite3
 import markdown
 
 from functools import wraps
@@ -40,12 +39,6 @@ sys.path.append(BASE_DIR)
 import database
 
 
-DATABASE = os.path.join(
-    BASE_DIR,
-    "save_data.db"
-)
-
-
 # =========================================================
 # FLASK CONFIGURATION
 # =========================================================
@@ -59,18 +52,66 @@ app.secret_key = os.getenv(
 
 
 # =========================================================
-# DATABASE CONNECTION
+# DATABASE HELPERS
 # =========================================================
 
-def get_db():
+def _row_to_dict(row, cursor=None):
+    """Convert a PostgreSQL result row to a normal dictionary."""
+    if row is None:
+        return None
 
-    conn = sqlite3.connect(
-        DATABASE
-    )
+    if isinstance(row, dict):
+        return dict(row)
 
-    conn.row_factory = sqlite3.Row
+    try:
+        return dict(row)
+    except (TypeError, ValueError):
+        if cursor is not None and cursor.description:
+            columns = [column[0] for column in cursor.description]
+            return dict(zip(columns, row))
 
-    return conn
+    return row
+
+
+def db_fetch_all(query, params=()):
+    """Run a SELECT query using the PostgreSQL connection from database.py."""
+    conn = database.create_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        return [_row_to_dict(row, cursor) for row in rows]
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def db_fetch_one(query, params=()):
+    """Run a SELECT query and return one PostgreSQL row as a dictionary."""
+    conn = database.create_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(query, params)
+        row = cursor.fetchone()
+        return _row_to_dict(row, cursor)
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def db_execute(query, params=()):
+    """Run an INSERT/UPDATE/DELETE query through database.py."""
+    conn = database.create_connection()
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute(query, params)
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
 
 
 # =========================================================
@@ -223,16 +264,15 @@ def home():
         ""
     ).strip()
 
-    conn = get_db()
-
-    categories = conn.execute(
+    categories = db_fetch_all(
         """
         SELECT DISTINCT category
         FROM articles
         WHERE category IS NOT NULL
         AND category != ''
+        ORDER BY category
         """
-    ).fetchall()
+    )
 
     severities = [
         "Critical",
@@ -242,18 +282,16 @@ def home():
     ]
 
     where_clauses = []
-
     params = []
 
     if keyword:
-
         where_clauses.append(
             """
             (
-                title LIKE ?
-                OR summary LIKE ?
-                OR category LIKE ?
-                OR source LIKE ?
+                title ILIKE %s
+                OR summary ILIKE %s
+                OR category ILIKE %s
+                OR source ILIKE %s
             )
             """
         )
@@ -268,21 +306,17 @@ def home():
         )
 
     if selected_severity:
-
         where_clauses.append(
-            "severity = ?"
+            "severity = %s"
         )
-
         params.append(
             selected_severity
         )
 
     if selected_category:
-
         where_clauses.append(
-            "category = ?"
+            "category = %s"
         )
-
         params.append(
             selected_category
         )
@@ -290,26 +324,20 @@ def home():
     where_str = ""
 
     if where_clauses:
-
         where_str = (
             " WHERE "
-            +
-            " AND ".join(
-                where_clauses
-            )
+            + " AND ".join(where_clauses)
         )
 
-    articles = conn.execute(
+    articles = db_fetch_all(
         f"""
         SELECT *
         FROM articles
         {where_str}
-        ORDER BY published_date DESC, id DESC
+        ORDER BY published_date DESC NULLS LAST, id DESC
         """,
-        params
-    ).fetchall()
-
-    conn.close()
+        tuple(params)
+    )
 
     return render_template(
         "index.html",
@@ -333,29 +361,21 @@ def home():
 @login_required
 def article(id):
 
-    conn = get_db()
-
-    article_data = conn.execute(
+    article_data = db_fetch_one(
         """
         SELECT *
         FROM articles
-        WHERE id = ?
+        WHERE id = %s
         """,
         (id,)
-    ).fetchone()
-
-    conn.close()
-
-    if not article_data:
-
-        return "Article not found", 404
-
-    article_dict = dict(
-        article_data
     )
 
-    if article_dict.get("summary"):
+    if not article_data:
+        return "Article not found", 404
 
+    article_dict = dict(article_data)
+
+    if article_dict.get("summary"):
         article_dict["summary"] = markdown.markdown(
             article_dict["summary"]
         )
@@ -363,29 +383,25 @@ def article(id):
     cve_list = []
 
     try:
-
-        cve_rows = database.get_cve_by_article(
-            id
-        )
+        cve_rows = database.get_cve_by_article(id)
 
         if cve_rows:
-
             for row in cve_rows:
-
                 cve_list.append(
-                    dict(row)
+                    _row_to_dict(row)
                 )
 
-    except Exception:
-
+    except Exception as e:
+        print(
+            f"CVE lookup failed: {e}"
+        )
         cve_list = []
 
     if not cve_list:
-
         import re
 
         summary_text = (
-            article_data["summary"] or ""
+            article_data.get("summary") or ""
         )
 
         found_cves = re.findall(
@@ -397,11 +413,9 @@ def article(id):
         seen = set()
 
         for cve in found_cves:
-
             cve = cve.upper()
 
             if cve not in seen:
-
                 seen.add(cve)
 
                 cve_list.append(
@@ -420,29 +434,23 @@ def article(id):
     recommendation = None
 
     try:
-
         recommendation = database.get_recommendation(
-
             article_dict.get(
                 "category",
                 "General Security"
             ),
-
             article_dict.get(
                 "severity",
                 "Low"
             )
-
         )
 
     except Exception as e:
-
         print(
             f"Recommendation lookup failed: {e}"
         )
 
     if not recommendation:
-
         recommendation = (
             "Review the affected systems, apply "
             "available security updates, monitor "
@@ -466,31 +474,37 @@ def article(id):
 @login_required
 def stats():
 
-    conn = get_db()
+    total_row = db_fetch_one(
+        "SELECT COUNT(*) AS count FROM articles"
+    )
 
-    total = conn.execute(
-        "SELECT COUNT(*) FROM articles"
-    ).fetchone()[0]
+    total = (
+        total_row["count"]
+        if total_row
+        else 0
+    )
 
-    severity_rows = conn.execute(
+    severity_rows = db_fetch_all(
         """
         SELECT severity,
                COUNT(*) AS count
         FROM articles
         GROUP BY severity
+        ORDER BY count DESC
         """
-    ).fetchall()
+    )
 
-    category_rows = conn.execute(
+    category_rows = db_fetch_all(
         """
         SELECT category,
                COUNT(*) AS count
         FROM articles
         GROUP BY category
+        ORDER BY count DESC
         """
-    ).fetchall()
+    )
 
-    sources = conn.execute(
+    sources = db_fetch_all(
         """
         SELECT source,
                COUNT(*) AS count
@@ -498,9 +512,7 @@ def stats():
         GROUP BY source
         ORDER BY count DESC
         """
-    ).fetchall()
-
-    conn.close()
+    )
 
     severity_dict = {
         "Critical": 0,
@@ -510,27 +522,21 @@ def stats():
     }
 
     for row in severity_rows:
+        severity = row.get("severity")
 
-        if row["severity"] in severity_dict:
-
+        if severity in severity_dict:
             severity_dict[
-                row["severity"]
-            ] = row["count"]
+                severity
+            ] = row.get("count", 0)
 
     category_labels = [
-
-        row["category"] or "Uncategorized"
-
+        row.get("category") or "Uncategorized"
         for row in category_rows
-
     ]
 
     category_counts = [
-
-        row["count"]
-
+        row.get("count", 0)
         for row in category_rows
-
     ]
 
     return render_template(
@@ -540,13 +546,16 @@ def stats():
         category_items=category_rows,
         sources=sources,
         severity_json=json.dumps(
-            severity_dict
+            severity_dict,
+            default=str
         ),
         category_labels_json=json.dumps(
-            category_labels
+            category_labels,
+            default=str
         ),
         category_counts_json=json.dumps(
-            category_counts
+            category_counts,
+            default=str
         ),
         daily_labels_json=json.dumps([]),
         daily_counts_json=json.dumps([])
@@ -897,27 +906,20 @@ def create_user():
 
         if success:
 
-            conn = sqlite3.connect(
-                DATABASE
-            )
-
-            cursor = conn.cursor()
-
-            cursor.execute(
+            # database.py handles the PostgreSQL connection.
+            # create_user() uses the default User role, so the
+            # selected administrator role is updated here.
+            db_execute(
                 """
                 UPDATE users
-                SET role = ?
-                WHERE email = ?
+                SET role = %s
+                WHERE email = %s
                 """,
                 (
                     role,
                     email
                 )
             )
-
-            conn.commit()
-
-            conn.close()
 
             flash(
                 "User created successfully.",
