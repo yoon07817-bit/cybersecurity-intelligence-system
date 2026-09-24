@@ -1,6 +1,7 @@
 import smtplib
 import html
 import re
+import os
 
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -26,7 +27,14 @@ from severity_filter import allow_alert
 SMTP_SERVER = "smtp.gmail.com"
 SMTP_PORT = 587
 
-DEFAULT_DASHBOARD_URL = "http://172.18.120.69:5000/"
+# Dashboard URL:
+# - Render: set DASHBOARD_URL environment variable
+# - Local: defaults to localhost
+DEFAULT_DASHBOARD_URL = os.getenv(
+    "DASHBOARD_URL",
+    "http://127.0.0.1:5000/"
+).rstrip("/") + "/"
+
 
 # ==========================================================
 # CHECK WHETHER ARTICLE NEEDS ALERT
@@ -35,15 +43,10 @@ DEFAULT_DASHBOARD_URL = "http://172.18.120.69:5000/"
 def should_alert(article):
 
     critical_keywords = [
-
         "zero-day",
-
         "actively exploited",
-
         "poc released"
-
     ]
-
 
     title = str(
         article.get(
@@ -52,7 +55,6 @@ def should_alert(article):
         )
     )
 
-
     summary = str(
         article.get(
             "summary",
@@ -60,13 +62,11 @@ def should_alert(article):
         )
     )
 
-
     text = (
         title
         + " "
         + summary
     ).lower()
-
 
     # ------------------------------------------------------
     # Check critical keywords
@@ -77,7 +77,6 @@ def should_alert(article):
         if keyword in text:
 
             return True
-
 
     # ------------------------------------------------------
     # Check severity
@@ -90,11 +89,9 @@ def should_alert(article):
         )
     ).lower()
 
-
     if severity == "critical":
 
         return True
-
 
     return False
 
@@ -109,11 +106,9 @@ def clean_summary(summary):
 
         return "<p>No summary available.</p>"
 
-
     summary = str(
         summary
     )
-
 
     # Escape HTML
 
@@ -121,36 +116,25 @@ def clean_summary(summary):
         summary
     )
 
-
     # ------------------------------------------------------
     # Markdown headings
     # ------------------------------------------------------
 
     summary = re.sub(
-
         r"##\s*\*\*(.*?)\*\*",
-
         r"<h4>\1</h4>",
-
         summary
-
     )
-
 
     # ------------------------------------------------------
     # Bold text
     # ------------------------------------------------------
 
     summary = re.sub(
-
         r"\*\*(.*?)\*\*",
-
         r"<strong>\1</strong>",
-
         summary
-
     )
-
 
     # ------------------------------------------------------
     # Convert lines
@@ -160,16 +144,13 @@ def clean_summary(summary):
         "\n"
     )
 
-
     output = []
 
     in_list = False
 
-
     for line in lines:
 
         line = line.strip()
-
 
         # Bullet point
 
@@ -183,11 +164,9 @@ def clean_summary(summary):
 
                 in_list = True
 
-
             output.append(
                 f"<li>{line[2:]}</li>"
             )
-
 
         else:
 
@@ -198,7 +177,6 @@ def clean_summary(summary):
                 )
 
                 in_list = False
-
 
             if line:
 
@@ -217,13 +195,11 @@ def clean_summary(summary):
                         f"<p>{line}</p>"
                     )
 
-
     if in_list:
 
         output.append(
             "</ul>"
         )
-
 
     return "\n".join(
         output
@@ -247,21 +223,17 @@ def get_article_cves(article):
 
     cves = []
 
-
     if article.get("cves"):
 
         cves = article["cves"]
-
 
     elif article.get("cve_ids"):
 
         cves = article["cve_ids"]
 
-
     elif article.get("cve"):
 
         cves = article["cve"]
-
 
     if isinstance(
         cves,
@@ -272,7 +244,6 @@ def get_article_cves(article):
             cves
         ]
 
-
     if not isinstance(
         cves,
         list
@@ -281,7 +252,6 @@ def get_article_cves(article):
         cves = [
             cves
         ]
-
 
     return cves
 
@@ -295,7 +265,6 @@ def format_cves(article):
     cves = get_article_cves(
         article
     )
-
 
     # ------------------------------------------------------
     # No CVE
@@ -319,7 +288,6 @@ def format_cves(article):
         </div>
 
         """
-
 
     # ------------------------------------------------------
     # CVE list
@@ -345,7 +313,6 @@ def format_cves(article):
 
     """
 
-
     for cve in cves:
 
         if isinstance(
@@ -365,7 +332,6 @@ def format_cves(article):
 
             cve_id = cve
 
-
         cve_html += (
 
             "<li "
@@ -383,7 +349,6 @@ def format_cves(article):
 
         )
 
-
     cve_html += """
 
     </ul>
@@ -391,7 +356,6 @@ def format_cves(article):
     </div>
 
     """
-
 
     return cve_html
 
@@ -406,7 +370,6 @@ def get_article_recommendation(article):
         "recommendation"
     )
 
-
     if not recommendation:
 
         category = article.get(
@@ -414,12 +377,10 @@ def get_article_recommendation(article):
             "General Security"
         )
 
-
         severity = article.get(
             "severity",
             "Low"
         )
-
 
         # Try to import recommendation function
         # only if the article does not already contain
@@ -431,7 +392,6 @@ def get_article_recommendation(article):
                 get_recommendation
             )
 
-
             recommendation = (
                 get_recommendation(
                     category,
@@ -439,11 +399,9 @@ def get_article_recommendation(article):
                 )
             )
 
-
         except Exception:
 
             recommendation = None
-
 
     # ------------------------------------------------------
     # Final fallback
@@ -461,7 +419,6 @@ def get_article_recommendation(article):
 
         )
 
-
     return recommendation
 
 
@@ -477,14 +434,12 @@ def get_severity_style(
         severity
     ).lower()
 
-
     if severity == "critical":
 
         return (
             "color:#dc3545;"
             "font-weight:bold;"
         )
-
 
     elif severity == "high":
 
@@ -493,14 +448,12 @@ def get_severity_style(
             "font-weight:bold;"
         )
 
-
     elif severity == "medium":
 
         return (
             "color:#b8860b;"
             "font-weight:bold;"
         )
-
 
     else:
 
@@ -538,7 +491,6 @@ def send_alert_email(
 
         return False
 
-
     if not users:
 
         print(
@@ -547,9 +499,7 @@ def send_alert_email(
 
         return False
 
-
     successful_send = False
-
 
     # ======================================================
     # PREPARE ARTICLE DATA
@@ -562,14 +512,12 @@ def send_alert_email(
         )
     )
 
-
     severity = str(
         article.get(
             "severity",
             "Critical"
         )
     )
-
 
     category = str(
         article.get(
@@ -578,7 +526,6 @@ def send_alert_email(
         )
     )
 
-
     source = str(
         article.get(
             "source",
@@ -586,12 +533,10 @@ def send_alert_email(
         )
     )
 
-
     score = article.get(
         "score",
         "N/A"
     )
-
 
     published_date = str(
         article.get(
@@ -599,7 +544,6 @@ def send_alert_email(
             "N/A"
         )
     )
-
 
     article_url = article.get(
         "link",
@@ -609,13 +553,11 @@ def send_alert_email(
         )
     )
 
-
     recommendation = (
         get_article_recommendation(
             article
         )
     )
-
 
     summary = clean_summary(
         article.get(
@@ -624,11 +566,9 @@ def send_alert_email(
         )
     )
 
-
     cve_html = format_cves(
         article
     )
-
 
     # ======================================================
     # ESCAPE TEXT
@@ -638,55 +578,45 @@ def send_alert_email(
         title
     )
 
-
     severity_safe = html.escape(
         severity
     )
-
 
     category_safe = html.escape(
         category
     )
 
-
     source_safe = html.escape(
         source
     )
-
 
     score_safe = html.escape(
         str(score)
     )
 
-
     date_safe = html.escape(
         published_date
     )
 
-
     recommendation_safe = html.escape(
         str(recommendation)
     )
-
 
     article_url_safe = html.escape(
         str(article_url),
         quote=True
     )
 
-
     dashboard_url_safe = html.escape(
         str(dashboard_url),
         quote=True
     )
-
 
     severity_style = (
         get_severity_style(
             severity
         )
     )
-
 
     # ======================================================
     # SMTP CONNECTION
@@ -701,17 +631,14 @@ def send_alert_email(
 
             smtp.starttls()
 
-
             smtp.login(
                 EMAIL_ADDRESS,
                 EMAIL_PASSWORD
             )
 
-
             print(
                 "Connected to Gmail SMTP."
             )
-
 
             # ==================================================
             # SEND TO EACH USER
@@ -719,23 +646,19 @@ def send_alert_email(
 
             for user in users:
 
-                # IMPORTANT:
-                # Convert sqlite3.Row to dictionary.
+                # Convert database row to dictionary
 
                 user = dict(
                     user
                 )
 
-
                 email = user.get(
                     "email"
                 )
 
-
                 if not email:
 
                     continue
-
 
                 minimum_severity = (
                     user.get(
@@ -743,7 +666,6 @@ def send_alert_email(
                         "Low"
                     )
                 )
-
 
                 # ------------------------------------------------
                 # Respect user's severity preference
@@ -763,7 +685,6 @@ def send_alert_email(
                     )
 
                     continue
-
 
                 # ==================================================
                 # BUILD EMAIL
@@ -1105,21 +1026,17 @@ def send_alert_email(
                     "alternative"
                 )
 
-
                 msg["Subject"] = (
                     "🚨 Critical Security Alert"
                 )
-
 
                 msg["From"] = (
                     EMAIL_ADDRESS
                 )
 
-
                 msg["To"] = (
                     email
                 )
-
 
                 msg.attach(
                     MIMEText(
@@ -1138,12 +1055,10 @@ def send_alert_email(
                     msg
                 )
 
-
                 print(
                     "Critical alert sent:",
                     email
                 )
-
 
                 successful_send = True
 
@@ -1158,18 +1073,15 @@ def send_alert_email(
             "Alert failed: Gmail authentication failed."
         )
 
-
         print(
             "Check EMAIL_ADDRESS and "
             "EMAIL_PASSWORD."
         )
 
-
         print(
             "Use a Gmail App Password if "
             "2-Step Verification is enabled."
         )
-
 
         return False
 
@@ -1224,7 +1136,6 @@ def process_unhandled_critical_alerts():
 
         return
 
-
     if not articles:
 
         print(
@@ -1233,12 +1144,10 @@ def process_unhandled_critical_alerts():
 
         return
 
-
     print(
         f"Found {len(articles)} "
         f"un-sent critical article(s)."
     )
-
 
     # ======================================================
     # PROCESS EACH ARTICLE
@@ -1246,12 +1155,11 @@ def process_unhandled_critical_alerts():
 
     for article in articles:
 
-        # Convert sqlite3.Row to dictionary
+        # Convert database row to dictionary
 
         article = dict(
             article
         )
-
 
         print(
             "\nChecking:",
@@ -1261,7 +1169,6 @@ def process_unhandled_critical_alerts():
             )
         )
 
-
         # --------------------------------------------------
         # Check alert condition
         # --------------------------------------------------
@@ -1270,11 +1177,9 @@ def process_unhandled_critical_alerts():
             article
         ):
 
-
             sent = send_alert_email(
                 article
             )
-
 
             if sent:
 
@@ -1284,14 +1189,12 @@ def process_unhandled_critical_alerts():
                         article["id"]
                     )
 
-
                     print(
                         "Alert completed:",
                         article.get(
                             "title"
                         )
                     )
-
 
                 except Exception as e:
 
@@ -1301,7 +1204,6 @@ def process_unhandled_critical_alerts():
                         e
                     )
 
-
             else:
 
                 print(
@@ -1309,7 +1211,6 @@ def process_unhandled_critical_alerts():
                     " no eligible subscriber "
                     "or email failure."
                 )
-
 
         else:
 
@@ -1330,6 +1231,5 @@ if __name__ == "__main__":
     print(
         "Running Critical Alert Check..."
     )
-
 
     process_unhandled_critical_alerts()

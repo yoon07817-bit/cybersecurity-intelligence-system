@@ -1,27 +1,20 @@
 {% extends "base.html" %}
 
-
 {% block title %}
 About Security Digest
 {% endblock %}
 
-
 {% block content %}
 
-
 <div class="container mt-4 mb-5">
-
 
     <h1 class="mb-4">
         🛡️ About Security Digest
     </h1>
 
-
     <div class="card shadow-sm">
 
-
         <div class="card-body">
-
 
             <!-- ================================================== -->
             <!-- PROJECT OVERVIEW -->
@@ -31,19 +24,18 @@ About Security Digest
                 📌 Project Overview
             </h4>
 
-
             <p>
                 <strong>Security Digest</strong> is an automated
                 cybersecurity threat intelligence monitoring system
                 designed to collect, analyse, and deliver security
                 information from multiple online sources.
+
                 The system reduces the difficulty of manually
                 monitoring cybersecurity news by automatically
                 gathering security reports, analysing their risk
                 level, generating concise summaries, and presenting
                 useful intelligence through a web-based dashboard.
             </p>
-
 
             <p>
                 The platform combines automated data collection,
@@ -64,9 +56,7 @@ About Security Digest
                 ⚙️ System Workflow
             </h4>
 
-
             <ol>
-
 
                 <li class="mb-2">
 
@@ -156,8 +146,8 @@ About Security Digest
 
                     Processed security intelligence, including article
                     information, summaries, severity, scores, CVEs,
-                    recommendations, and alert status, is stored using
-                    SQLite.
+                    recommendations, and alert status, is stored in
+                    PostgreSQL hosted on Render.
 
                 </li>
 
@@ -172,7 +162,6 @@ About Security Digest
 
                 </li>
 
-
             </ol>
 
 
@@ -184,69 +173,102 @@ About Security Digest
                 💻 Technology Stack
             </h4>
 
-
             <ul>
 
-
                 <li>
+
                     <strong>Programming Language:</strong>
+
                     Python – Core backend processing, automation,
                     threat analysis, and email functionality.
+
                 </li>
 
 
                 <li>
+
                     <strong>Web Framework:</strong>
+
                     Flask – Provides dashboard routing,
                     authentication, article views, and web
                     application functionality.
+
                 </li>
 
 
                 <li>
+
                     <strong>Database:</strong>
-                    SQLite – Stores users, articles, threat scores,
-                    summaries, CVE information, recommendations,
-                    and notification status.
+
+                    PostgreSQL – Stores users, articles, threat
+                    scores, summaries, CVE information,
+                    recommendations, and notification status.
+                    The database is hosted on Render.
+
                 </li>
 
 
                 <li>
+
+                    <strong>Cloud Hosting:</strong>
+
+                    Render – Hosts the Flask web application and
+                    provides the PostgreSQL database used by the
+                    system.
+
+                </li>
+
+
+                <li>
+
                     <strong>AI Integration:</strong>
+
                     Groq API – Generates concise cybersecurity
                     article summaries.
+
                 </li>
 
 
                 <li>
+
                     <strong>Frontend:</strong>
+
                     HTML5, Bootstrap, and JavaScript – Creates the
                     responsive user interface and dashboard
                     functionality.
+
                 </li>
 
 
                 <li>
+
                     <strong>Data Visualisation:</strong>
+
                     Chart.js – Displays security statistics and
                     threat trends through interactive charts.
+
                 </li>
 
 
                 <li>
+
                     <strong>RSS Processing:</strong>
+
                     Feedparser and HTTP requests – Collect and
                     process cybersecurity RSS feeds.
+
                 </li>
 
 
                 <li>
+
                     <strong>Email Automation:</strong>
+
                     SMTP and Python email modules – Deliver daily
                     security digest emails and Critical security
                     alerts.
-                </li>
 
+                </li>
 
             </ul>
 
@@ -259,25 +281,20 @@ About Security Digest
                 🔑 Main Features
             </h4>
 
-
             <ul>
-
 
                 <li>
                     Automated cybersecurity news collection from
                     multiple RSS sources.
                 </li>
 
-
                 <li>
                     Automatic filtering and duplicate detection.
                 </li>
 
-
                 <li>
                     AI-generated summaries for security reports.
                 </li>
-
 
                 <li>
                     Threat classification using
@@ -285,66 +302,54 @@ About Security Digest
                     severity levels.
                 </li>
 
-
                 <li>
                     Threat score and keyword analysis.
                 </li>
 
-
                 <li>
                     Automatic CVE identification.
                 </li>
-
 
                 <li>
                     Protection recommendations based on security
                     category and severity.
                 </li>
 
-
                 <li>
                     Dashboard displaying security intelligence
                     information.
                 </li>
 
-
                 <li>
                     Search and filtering of security articles.
                 </li>
 
-
                 <li>
                     User authentication and account management.
                 </li>
-
 
                 <li>
                     Custom notification preferences and minimum
                     severity thresholds.
                 </li>
 
-
                 <li>
                     Daily cybersecurity digest emails.
                 </li>
 
-
                 <li>
                     Critical security alert notifications.
                 </li>
-
 
                 <li>
                     Alert delivery tracking to reduce duplicate
                     notifications.
                 </li>
 
-
                 <li>
                     Admin management functions for controlling
                     user accounts.
                 </li>
-
 
             </ul>
 
@@ -357,12 +362,10 @@ About Security Digest
                 📧 Email Notification System
             </h4>
 
-
             <p>
                 Security Digest provides two main types of email
                 notifications.
             </p>
-
 
             <p>
 
@@ -372,7 +375,6 @@ About Security Digest
                 articles collected and processed by the system.
 
             </p>
-
 
             <p>
 
@@ -384,22 +386,24 @@ About Security Digest
 
             </p>
 
-
             <p>
+
                 Alert delivery is controlled by user preferences,
                 including notification type and minimum severity
                 threshold. Critical articles are stored in the
                 database with an alert status. After an alert is
                 successfully sent, the delivery status is updated to
                 help prevent the same alert from being sent again.
+
             </p>
 
-
             <p>
+
                 The alert checking process reads Critical articles
                 from the database rather than repeatedly collecting
                 RSS feeds. This separates the article collection
                 process from the notification process.
+
             </p>
 
 
@@ -411,44 +415,52 @@ About Security Digest
                 ⏰ Automated Scheduling
             </h4>
 
-
             <p>
                 The system uses an automated scheduler to run the
                 main background tasks without requiring each process
                 to be started manually.
             </p>
 
-
             <ul>
 
                 <li>
+
                     <strong>Article Collection:</strong>
+
                     Periodically collects and processes new
                     cybersecurity articles.
+
                 </li>
 
 
                 <li>
+
                     <strong>Critical Alert Check:</strong>
+
                     Periodically checks the database for unsent
                     Critical security alerts.
+
                 </li>
 
 
                 <li>
+
                     <strong>Daily Digest:</strong>
+
                     Sends the daily security digest according to
                     the configured schedule.
+
                 </li>
 
             </ul>
 
-
             <p class="text-muted small">
+
                 The scheduling intervals can be temporarily shortened
                 during system demonstrations and testing to allow
                 automated functions to be verified without waiting
                 for the normal production schedule.
+
             </p>
 
 
@@ -459,7 +471,6 @@ About Security Digest
             <h4 class="mt-4">
                 🎯 Project Purpose
             </h4>
-
 
             <p class="mb-0">
 
@@ -474,14 +485,10 @@ About Security Digest
 
             </p>
 
-
         </div>
-
 
     </div>
 
-
 </div>
-
 
 {% endblock %}

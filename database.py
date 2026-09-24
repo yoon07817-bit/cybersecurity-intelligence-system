@@ -1,5 +1,5 @@
 import os
-import sqlite3
+from dotenv import load_dotenv
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -16,43 +16,52 @@ except ImportError:
 # ==========================================
 # DATABASE CONFIGURATION
 # ==========================================
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_NAME = os.path.join(BASE_DIR, "save_data.db")
+
+load_dotenv()
+
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
-USE_POSTGRES = bool(DATABASE_URL)
+
+if not DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL is not configured. "
+        "This application requires PostgreSQL."
+    )
+
+if not DATABASE_URL.startswith(("postgresql://", "postgres://")):
+    raise RuntimeError(
+        "DATABASE_URL must be a PostgreSQL connection URL."
+    )
+
+USE_POSTGRES = True
 
 
 # ==========================================
 # DATABASE CONNECTION
 # ==========================================
-def create_connection():
-    """Return a connection to Render PostgreSQL when DATABASE_URL exists;
-    otherwise return the local SQLite connection.
-    """
-    if USE_POSTGRES:
-        if psycopg2 is None:
-            raise RuntimeError(
-                "psycopg2 is required when DATABASE_URL is configured. "
-                "Install psycopg2-binary."
-            )
-        return psycopg2.connect(DATABASE_URL, connect_timeout=15)
 
-    conn = sqlite3.connect(DB_NAME, timeout=30)
-    conn.row_factory = sqlite3.Row
-    return conn
+def create_connection():
+    """Return a connection to the configured PostgreSQL database."""
+
+    if psycopg2 is None:
+        raise RuntimeError(
+            "psycopg2 is required. "
+            "Install psycopg2-binary."
+        )
+
+    return psycopg2.connect(
+        DATABASE_URL,
+        connect_timeout=15
+    )
 
 
 class DBConnection:
-    """Small compatibility wrapper so the rest of this module can use
-    SQLite-style '?' placeholders with both SQLite and PostgreSQL.
-    """
+    """Compatibility wrapper for PostgreSQL database operations."""
+
     def __init__(self, conn):
         self.conn = conn
 
     def cursor(self):
-        if USE_POSTGRES:
-            return self.conn.cursor(cursor_factory=RealDictCursor)
-        return self.conn.cursor()
+        return self.conn.cursor(cursor_factory=RealDictCursor)
 
     def commit(self):
         self.conn.commit()
@@ -69,13 +78,14 @@ def db_connection():
 
 
 def execute(cursor, query, params=None):
-    """Execute SQL using '?' placeholders for both database engines."""
-    if USE_POSTGRES:
-        query = query.replace("?", "%s")
+    """Execute SQL using '?' placeholders converted to PostgreSQL '%s'."""
+
+    query = query.replace("?", "%s")
+
     if params is None:
         return cursor.execute(query)
-    return cursor.execute(query, params)
 
+    return cursor.execute(query, params)
 
 # ==========================================
 # CURRENT TIME
@@ -90,230 +100,163 @@ def current_time():
 # CREATE / MIGRATE DATABASE TABLES
 # ==========================================
 def create_table():
+    """Create all required PostgreSQL tables if they do not already exist."""
     conn = db_connection()
     cursor = conn.cursor()
+
     try:
-        if USE_POSTGRES:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS articles (
-                    id SERIAL PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    url TEXT UNIQUE NOT NULL,
-                    source TEXT,
-                    category TEXT,
-                    published_date TEXT,
-                    summary TEXT,
-                    severity TEXT,
-                    score INTEGER,
-                    created_at TEXT,
-                    alert_sent INTEGER DEFAULT 0
-                )
-            """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS articles (
+                id SERIAL PRIMARY KEY,
+                title TEXT NOT NULL,
+                url TEXT UNIQUE NOT NULL,
+                source TEXT,
+                category TEXT,
+                published_date TEXT,
+                summary TEXT,
+                severity TEXT,
+                score INTEGER,
+                created_at TEXT,
+                alert_sent INTEGER DEFAULT 0
+            )
+        """)
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id SERIAL PRIMARY KEY,
-                    email TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    receive_daily_digest INTEGER DEFAULT 1,
-                    receive_critical_alerts INTEGER DEFAULT 1,
-                    created_at TEXT,
-                    last_login TEXT,
-                    login_count INTEGER DEFAULT 0,
-                    account_status TEXT DEFAULT 'Active',
-                    role TEXT DEFAULT 'User',
-                    receive_weekly_digest INTEGER DEFAULT 0,
-                    minimum_severity TEXT DEFAULT 'Low'
-                )
-            """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id SERIAL PRIMARY KEY,
+                email TEXT UNIQUE NOT NULL,
+                password_hash TEXT NOT NULL,
+                receive_daily_digest INTEGER DEFAULT 1,
+                receive_critical_alerts INTEGER DEFAULT 1,
+                created_at TEXT,
+                last_login TEXT,
+                login_count INTEGER DEFAULT 0,
+                account_status TEXT DEFAULT 'Active',
+                role TEXT DEFAULT 'User',
+                receive_weekly_digest INTEGER DEFAULT 0,
+                minimum_severity TEXT DEFAULT 'Low'
+            )
+        """)
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS cve_details (
-                    id SERIAL PRIMARY KEY,
-                    article_id INTEGER,
-                    cve_id TEXT,
-                    cvss_score REAL,
-                    severity TEXT,
-                    description TEXT,
-                    affected_product TEXT,
-                    created_at TEXT,
-                    FOREIGN KEY (article_id) REFERENCES articles(id)
-                )
-            """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS cve_details (
+                id SERIAL PRIMARY KEY,
+                article_id INTEGER,
+                cve_id TEXT,
+                cvss_score REAL,
+                severity TEXT,
+                description TEXT,
+                affected_product TEXT,
+                created_at TEXT,
+                FOREIGN KEY (article_id) REFERENCES articles(id)
+            )
+        """)
 
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS recommendations (
-                    id SERIAL PRIMARY KEY,
-                    category TEXT,
-                    severity TEXT,
-                    advice TEXT
-                )
-            """)
-        else:
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS articles (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    title TEXT NOT NULL,
-                    url TEXT UNIQUE NOT NULL,
-                    source TEXT,
-                    category TEXT,
-                    published_date TEXT,
-                    summary TEXT,
-                    severity TEXT,
-                    score INTEGER,
-                    created_at TEXT,
-                    alert_sent INTEGER DEFAULT 0
-                )
-            """)
-
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS users (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    email TEXT UNIQUE NOT NULL,
-                    password_hash TEXT NOT NULL,
-                    receive_daily_digest INTEGER DEFAULT 1,
-                    receive_critical_alerts INTEGER DEFAULT 1,
-                    created_at TEXT,
-                    last_login TEXT,
-                    login_count INTEGER DEFAULT 0,
-                    account_status TEXT DEFAULT 'Active',
-                    role TEXT DEFAULT 'User',
-                    receive_weekly_digest INTEGER DEFAULT 0,
-                    minimum_severity TEXT DEFAULT 'Low'
-                )
-            """)
-
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS cve_details (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    article_id INTEGER,
-                    cve_id TEXT,
-                    cvss_score REAL,
-                    severity TEXT,
-                    description TEXT,
-                    affected_product TEXT,
-                    created_at TEXT,
-                    FOREIGN KEY (article_id) REFERENCES articles(id)
-                )
-            """)
-
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS recommendations (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    category TEXT,
-                    severity TEXT,
-                    advice TEXT
-                )
-            """)
-
-            migrate_database(conn, cursor)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS recommendations (
+                id SERIAL PRIMARY KEY,
+                category TEXT,
+                severity TEXT,
+                advice TEXT
+            )
+        """)
 
         conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
         conn.close()
 
 
 def migrate_database(conn=None, cursor=None):
-    """Add columns used by the application to an older local SQLite DB.
-    PostgreSQL databases created by create_table already contain all columns.
-    """
+    """Ensure required columns exist in the PostgreSQL database."""
+
     own_connection = conn is None
+
     if own_connection:
         conn = db_connection()
         cursor = conn.cursor()
 
     try:
-        if USE_POSTGRES:
-            # Safe for an older PostgreSQL database as well.
-            statements = [
-                "ALTER TABLE articles ADD COLUMN IF NOT EXISTS category TEXT",
-                "ALTER TABLE articles ADD COLUMN IF NOT EXISTS severity TEXT",
-                "ALTER TABLE articles ADD COLUMN IF NOT EXISTS score INTEGER",
-                "ALTER TABLE articles ADD COLUMN IF NOT EXISTS created_at TEXT",
-                "ALTER TABLE articles ADD COLUMN IF NOT EXISTS alert_sent INTEGER DEFAULT 0",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_daily_digest INTEGER DEFAULT 1",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_critical_alerts INTEGER DEFAULT 1",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TEXT",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TEXT",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT DEFAULT 'Active'",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'User'",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_weekly_digest INTEGER DEFAULT 0",
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS minimum_severity TEXT DEFAULT 'Low'",
-            ]
-            for statement in statements:
-                cursor.execute(statement)
-        else:
-            cursor.execute("PRAGMA table_info(articles)")
-            article_columns = [row["name"] for row in cursor.fetchall()]
-            article_additions = {
-                "category": "ALTER TABLE articles ADD COLUMN category TEXT",
-                "severity": "ALTER TABLE articles ADD COLUMN severity TEXT",
-                "score": "ALTER TABLE articles ADD COLUMN score INTEGER",
-                "created_at": "ALTER TABLE articles ADD COLUMN created_at TEXT",
-                "alert_sent": "ALTER TABLE articles ADD COLUMN alert_sent INTEGER DEFAULT 0",
-            }
-            for column, statement in article_additions.items():
-                if article_columns and column not in article_columns:
-                    cursor.execute(statement)
+        statements = [
+            "ALTER TABLE articles ADD COLUMN IF NOT EXISTS category TEXT",
+            "ALTER TABLE articles ADD COLUMN IF NOT EXISTS severity TEXT",
+            "ALTER TABLE articles ADD COLUMN IF NOT EXISTS score INTEGER",
+            "ALTER TABLE articles ADD COLUMN IF NOT EXISTS created_at TEXT",
+            "ALTER TABLE articles ADD COLUMN IF NOT EXISTS alert_sent INTEGER DEFAULT 0",
 
-            cursor.execute("PRAGMA table_info(users)")
-            user_columns = [row["name"] for row in cursor.fetchall()]
-            user_additions = {
-                "receive_daily_digest": "ALTER TABLE users ADD COLUMN receive_daily_digest INTEGER DEFAULT 1",
-                "receive_critical_alerts": "ALTER TABLE users ADD COLUMN receive_critical_alerts INTEGER DEFAULT 1",
-                "created_at": "ALTER TABLE users ADD COLUMN created_at TEXT",
-                "last_login": "ALTER TABLE users ADD COLUMN last_login TEXT",
-                "login_count": "ALTER TABLE users ADD COLUMN login_count INTEGER DEFAULT 0",
-                "account_status": "ALTER TABLE users ADD COLUMN account_status TEXT DEFAULT 'Active'",
-                "role": "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'User'",
-                "receive_weekly_digest": "ALTER TABLE users ADD COLUMN receive_weekly_digest INTEGER DEFAULT 0",
-                "minimum_severity": "ALTER TABLE users ADD COLUMN minimum_severity TEXT DEFAULT 'Low'",
-            }
-            for column, statement in user_additions.items():
-                if user_columns and column not in user_columns:
-                    cursor.execute(statement)
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_daily_digest INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_critical_alerts INTEGER DEFAULT 1",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login TEXT",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS login_count INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS account_status TEXT DEFAULT 'Active'",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS role TEXT DEFAULT 'User'",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS receive_weekly_digest INTEGER DEFAULT 0",
+            "ALTER TABLE users ADD COLUMN IF NOT EXISTS minimum_severity TEXT DEFAULT 'Low'",
+        ]
+
+        for statement in statements:
+            cursor.execute(statement)
 
         conn.commit()
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
         if own_connection:
             conn.close()
+
 
 
 # ==========================================
 # ARTICLE FUNCTIONS
 # ==========================================
 def insert_article(article):
+    """Insert an article into PostgreSQL without duplicating its URL."""
+
     conn = db_connection()
     cursor = conn.cursor()
+
     try:
-        if USE_POSTGRES:
-            execute(cursor, """
-                INSERT INTO articles
-                (title, url, source, category, published_date, summary, severity, score, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ON CONFLICT (url) DO NOTHING
-            """, (
-                article["title"], article["url"], article.get("source"),
-                article.get("category"), article.get("published_date"),
-                article.get("summary"), article.get("severity"),
-                article.get("score"), current_time()
-            ))
-        else:
-            execute(cursor, """
-                INSERT OR IGNORE INTO articles
-                (title, url, source, category, published_date, summary, severity, score, created_at)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (
-                article["title"], article["url"], article.get("source"),
-                article.get("category"), article.get("published_date"),
-                article.get("summary"), article.get("severity"),
-                article.get("score"), current_time()
-            ))
+        execute(cursor, """
+            INSERT INTO articles
+            (title, url, source, category, published_date, summary, severity, score, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ON CONFLICT (url) DO NOTHING
+        """, (
+            article["title"],
+            article["url"],
+            article.get("source"),
+            article.get("category"),
+            article.get("published_date"),
+            article.get("summary"),
+            article.get("severity"),
+            article.get("score"),
+            current_time()
+        ))
+
         conn.commit()
-        execute(cursor, "SELECT id FROM articles WHERE url=?", (article["url"],))
+
+        execute(
+            cursor,
+            "SELECT id FROM articles WHERE url=?",
+            (article["url"],)
+        )
+
         row = cursor.fetchone()
+
         return row["id"] if row else None
+
+    except Exception:
+        conn.rollback()
+        raise
+
     finally:
         conn.close()
 
@@ -331,6 +274,30 @@ def get_articles():
     finally:
         conn.close()
 
+
+def get_articles_today():
+    """
+    Return today's articles from PostgreSQL.
+
+    Uses RealDictCursor so each row can be converted to a
+    normal dictionary by the scheduler.
+    """
+
+    conn = db_connection()
+    cursor = conn.cursor()
+
+    try:
+        execute(cursor, """
+            SELECT *
+            FROM articles
+            WHERE DATE(published_date) = CURRENT_DATE
+            ORDER BY published_date DESC
+        """)
+
+        return cursor.fetchall()
+
+    finally:
+        conn.close()
 
 def article_exists(url):
     conn = db_connection()
@@ -729,8 +696,7 @@ def get_users_for_alert(alert_type="daily"):
 # database.py as "__main__". Therefore the tables must
 # also be created during module import.
 #
-# This prevents:
-#     sqlite3.OperationalError: no such table: articles
+# This ensures the PostgreSQL tables exist before the application uses them.
 #
 # when dashboard/app.py accesses the database after deployment.
 try:
@@ -745,7 +711,4 @@ except Exception as database_startup_error:
 
 
 if __name__ == "__main__":
-    if USE_POSTGRES:
-        print("PostgreSQL database initialized successfully.")
-    else:
-        print("SQLite database initialized successfully.")
+    print("PostgreSQL database initialized successfully.")
