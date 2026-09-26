@@ -463,7 +463,7 @@ def create_user(email, password):
     except Exception as e:
         conn.rollback()
 
-        print(f"CREATE USER ERROR: {e}",flash=True)
+        print(f"CREATE USER ERROR: {e}",flush=True)
 
         return False
 
