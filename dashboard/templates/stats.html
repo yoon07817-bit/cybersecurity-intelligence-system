@@ -267,7 +267,7 @@ body {
 
                 <h5 class="card-title text-center mb-3">
 
-                    Article Ingestion Volume (Last 30 Days)
+                    Article Ingestion Volume (Last 7 Days)
 
                 </h5>
 
@@ -365,6 +365,7 @@ body {
 
 
 
+
 <script>
 
 
@@ -387,7 +388,9 @@ const dailyCounts = JSON.parse('{{ daily_counts_json | safe }}');
 
 
 
+
 // Severity Chart
+
 
 new Chart(document.getElementById('severityChart'), {
 
@@ -412,10 +415,12 @@ new Chart(document.getElementById('severityChart'), {
 
             backgroundColor: [
 
+
                 '#dc3545',
                 '#fd7e14',
                 '#ffc107',
                 '#198754'
+
 
             ],
 
@@ -482,6 +487,8 @@ new Chart(document.getElementById('severityChart'), {
 
 
 });
+
+
 
 
 
@@ -565,7 +572,9 @@ new Chart(document.getElementById('categoryChart'), {
 
 
 
-// Daily Chart
+
+
+// Daily Chart - Last 7 Days
 
 
 new Chart(document.getElementById('dailyChart'), {
@@ -668,8 +677,9 @@ new Chart(document.getElementById('dailyChart'), {
 });
 
 
-
 </script>
+
+
 
 
 {% endblock %}

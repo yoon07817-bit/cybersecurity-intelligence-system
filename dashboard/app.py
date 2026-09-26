@@ -57,6 +57,7 @@ app.secret_key = os.getenv(
 
 def _row_to_dict(row, cursor=None):
     """Convert a PostgreSQL result row to a normal dictionary."""
+
     if row is None:
         return None
 
@@ -65,51 +66,95 @@ def _row_to_dict(row, cursor=None):
 
     try:
         return dict(row)
+
     except (TypeError, ValueError):
+
         if cursor is not None and cursor.description:
-            columns = [column[0] for column in cursor.description]
-            return dict(zip(columns, row))
+
+            columns = [
+                column[0]
+                for column in cursor.description
+            ]
+
+            return dict(
+                zip(columns, row)
+            )
 
     return row
 
 
 def db_fetch_all(query, params=()):
     """Run a SELECT query using the PostgreSQL connection from database.py."""
+
     conn = database.create_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute(query, params)
+
+        cursor.execute(
+            query,
+            params
+        )
+
         rows = cursor.fetchall()
-        return [_row_to_dict(row, cursor) for row in rows]
+
+        return [
+            _row_to_dict(
+                row,
+                cursor
+            )
+            for row in rows
+        ]
+
     finally:
+
         cursor.close()
         conn.close()
 
 
 def db_fetch_one(query, params=()):
     """Run a SELECT query and return one PostgreSQL row as a dictionary."""
+
     conn = database.create_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute(query, params)
+
+        cursor.execute(
+            query,
+            params
+        )
+
         row = cursor.fetchone()
-        return _row_to_dict(row, cursor)
+
+        return _row_to_dict(
+            row,
+            cursor
+        )
+
     finally:
+
         cursor.close()
         conn.close()
 
 
 def db_execute(query, params=()):
     """Run an INSERT/UPDATE/DELETE query through database.py."""
+
     conn = database.create_connection()
     cursor = conn.cursor()
 
     try:
-        cursor.execute(query, params)
+
+        cursor.execute(
+            query,
+            params
+        )
+
         conn.commit()
+
     finally:
+
         cursor.close()
         conn.close()
 
@@ -282,9 +327,11 @@ def home():
     ]
 
     where_clauses = []
+
     params = []
 
     if keyword:
+
         where_clauses.append(
             """
             (
@@ -306,17 +353,21 @@ def home():
         )
 
     if selected_severity:
+
         where_clauses.append(
             "severity = %s"
         )
+
         params.append(
             selected_severity
         )
 
     if selected_category:
+
         where_clauses.append(
             "category = %s"
         )
+
         params.append(
             selected_category
         )
@@ -324,9 +375,12 @@ def home():
     where_str = ""
 
     if where_clauses:
+
         where_str = (
             " WHERE "
-            + " AND ".join(where_clauses)
+            + " AND ".join(
+                where_clauses
+            )
         )
 
     articles = db_fetch_all(
@@ -371,11 +425,15 @@ def article(id):
     )
 
     if not article_data:
+
         return "Article not found", 404
 
-    article_dict = dict(article_data)
+    article_dict = dict(
+        article_data
+    )
 
     if article_dict.get("summary"):
+
         article_dict["summary"] = markdown.markdown(
             article_dict["summary"]
         )
@@ -383,25 +441,34 @@ def article(id):
     cve_list = []
 
     try:
-        cve_rows = database.get_cve_by_article(id)
+
+        cve_rows = database.get_cve_by_article(
+            id
+        )
 
         if cve_rows:
+
             for row in cve_rows:
+
                 cve_list.append(
                     _row_to_dict(row)
                 )
 
     except Exception as e:
+
         print(
             f"CVE lookup failed: {e}"
         )
+
         cve_list = []
 
     if not cve_list:
+
         import re
 
         summary_text = (
-            article_data.get("summary") or ""
+            article_data.get("summary")
+            or ""
         )
 
         found_cves = re.findall(
@@ -413,9 +480,11 @@ def article(id):
         seen = set()
 
         for cve in found_cves:
+
             cve = cve.upper()
 
             if cve not in seen:
+
                 seen.add(cve)
 
                 cve_list.append(
@@ -434,6 +503,7 @@ def article(id):
     recommendation = None
 
     try:
+
         recommendation = database.get_recommendation(
             article_dict.get(
                 "category",
@@ -446,11 +516,13 @@ def article(id):
         )
 
     except Exception as e:
+
         print(
             f"Recommendation lookup failed: {e}"
         )
 
     if not recommendation:
+
         recommendation = (
             "Review the affected systems, apply "
             "available security updates, monitor "
@@ -474,6 +546,10 @@ def article(id):
 @login_required
 def stats():
 
+    # ---------------------------------------------------------
+    # Total Articles
+    # ---------------------------------------------------------
+
     total_row = db_fetch_one(
         "SELECT COUNT(*) AS count FROM articles"
     )
@@ -484,35 +560,54 @@ def stats():
         else 0
     )
 
+    # ---------------------------------------------------------
+    # Articles by Severity
+    # ---------------------------------------------------------
+
     severity_rows = db_fetch_all(
         """
-        SELECT severity,
-               COUNT(*) AS count
+        SELECT
+            severity,
+            COUNT(*) AS count
         FROM articles
         GROUP BY severity
         ORDER BY count DESC
         """
     )
 
+    # ---------------------------------------------------------
+    # Articles by Category
+    # ---------------------------------------------------------
+
     category_rows = db_fetch_all(
         """
-        SELECT category,
-               COUNT(*) AS count
+        SELECT
+            category,
+            COUNT(*) AS count
         FROM articles
         GROUP BY category
         ORDER BY count DESC
         """
     )
 
+    # ---------------------------------------------------------
+    # Articles by Source
+    # ---------------------------------------------------------
+
     sources = db_fetch_all(
         """
-        SELECT source,
-               COUNT(*) AS count
+        SELECT
+            source,
+            COUNT(*) AS count
         FROM articles
         GROUP BY source
         ORDER BY count DESC
         """
     )
+
+    # ---------------------------------------------------------
+    # Severity Data
+    # ---------------------------------------------------------
 
     severity_dict = {
         "Critical": 0,
@@ -522,15 +617,25 @@ def stats():
     }
 
     for row in severity_rows:
-        severity = row.get("severity")
+
+        severity = row.get(
+            "severity"
+        )
 
         if severity in severity_dict:
-            severity_dict[
-                severity
-            ] = row.get("count", 0)
+
+            severity_dict[severity] = row.get(
+                "count",
+                0
+            )
+
+    # ---------------------------------------------------------
+    # Category Data
+    # ---------------------------------------------------------
 
     category_labels = [
-        row.get("category") or "Uncategorized"
+        row.get("category")
+        or "Uncategorized"
         for row in category_rows
     ]
 
@@ -539,26 +644,103 @@ def stats():
         for row in category_rows
     ]
 
+    # ---------------------------------------------------------
+    # Article Ingestion Volume - Last 7 Days
+    # ---------------------------------------------------------
+    #
+    # created_at is stored as TEXT in the current
+    # PostgreSQL database.
+    #
+    # The first 10 characters are in YYYY-MM-DD format.
+    #
+    # generate_series creates all seven dates, including
+    # dates where no articles were collected.
+    # ---------------------------------------------------------
+
+    daily_rows = db_fetch_all(
+        """
+        SELECT
+            d::date AS day,
+            COUNT(a.id) AS count
+
+        FROM generate_series(
+            CURRENT_DATE - INTERVAL '6 days',
+            CURRENT_DATE,
+            INTERVAL '1 day'
+        ) AS d
+
+        LEFT JOIN articles a
+            ON LEFT(a.created_at, 10)
+               = TO_CHAR(d, 'YYYY-MM-DD')
+
+        GROUP BY d
+
+        ORDER BY d ASC
+        """
+    )
+
+    # ---------------------------------------------------------
+    # Daily Chart Labels
+    # ---------------------------------------------------------
+
+    daily_labels = [
+        str(
+            row.get("day")
+        )
+        for row in daily_rows
+    ]
+
+    # ---------------------------------------------------------
+    # Daily Article Counts
+    # ---------------------------------------------------------
+
+    daily_counts = [
+        row.get(
+            "count",
+            0
+        )
+        for row in daily_rows
+    ]
+
+    # ---------------------------------------------------------
+    # Render Statistics Page
+    # ---------------------------------------------------------
+
     return render_template(
         "stats.html",
+
         total=total,
+
         severity_items=severity_rows,
+
         category_items=category_rows,
+
         sources=sources,
+
         severity_json=json.dumps(
             severity_dict,
             default=str
         ),
+
         category_labels_json=json.dumps(
             category_labels,
             default=str
         ),
+
         category_counts_json=json.dumps(
             category_counts,
             default=str
         ),
-        daily_labels_json=json.dumps([]),
-        daily_counts_json=json.dumps([])
+
+        daily_labels_json=json.dumps(
+            daily_labels,
+            default=str
+        ),
+
+        daily_counts_json=json.dumps(
+            daily_counts,
+            default=str
+        )
     )
 
 
@@ -909,6 +1091,7 @@ def create_user():
             # database.py handles the PostgreSQL connection.
             # create_user() uses the default User role, so the
             # selected administrator role is updated here.
+
             db_execute(
                 """
                 UPDATE users
@@ -1068,24 +1251,47 @@ def admin_dashboard():
 
     return render_template(
         "admin.html",
-        user_count=user_count["count"] if user_count else 0,
-        article_count=article_count["count"] if article_count else 0,
-        cve_count=cve_count["count"] if cve_count else 0,
+
+        user_count=(
+            user_count["count"]
+            if user_count
+            else 0
+        ),
+
+        article_count=(
+            article_count["count"]
+            if article_count
+            else 0
+        ),
+
+        cve_count=(
+            cve_count["count"]
+            if cve_count
+            else 0
+        ),
+
         recommendation_count=(
             recommendation_count["count"]
-            if recommendation_count else 0
+            if recommendation_count
+            else 0
         ),
+
         critical_total=(
             critical_total["count"]
-            if critical_total else 0
+            if critical_total
+            else 0
         ),
+
         critical_sent=(
             critical_sent["count"]
-            if critical_sent else 0
+            if critical_sent
+            else 0
         ),
+
         critical_unsent=(
             critical_unsent["count"]
-            if critical_unsent else 0
+            if critical_unsent
+            else 0
         )
     )
 
