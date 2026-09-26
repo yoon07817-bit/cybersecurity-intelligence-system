@@ -448,38 +448,25 @@ def get_recommendation(category, severity):
 def create_user(email, password):
     conn = db_connection()
     cursor = conn.cursor()
+
     try:
         password_hash = generate_password_hash(password)
+
         execute(cursor, """
             INSERT INTO users (email, password_hash, created_at)
             VALUES (?, ?, ?)
         """, (email, password_hash, current_time()))
+
         conn.commit()
         return True
-    except Exception:
+
+    except Exception as e:
         conn.rollback()
+
+        print(f"CREATE USER ERROR: {e}",flash=True)
+
         return False
-    finally:
-        conn.close()
 
-
-def get_user_by_email(email):
-    conn = db_connection()
-    cursor = conn.cursor()
-    try:
-        execute(cursor, "SELECT * FROM users WHERE email=?", (email,))
-        return cursor.fetchone()
-    finally:
-        conn.close()
-
-
-def get_user_by_id(user_id):
-    """Return one user by ID. Used by Flask-Login user_loader."""
-    conn = db_connection()
-    cursor = conn.cursor()
-    try:
-        execute(cursor, "SELECT * FROM users WHERE id=?", (user_id,))
-        return cursor.fetchone()
     finally:
         conn.close()
 
